@@ -1,4 +1,5 @@
 #include <Python.h>
+#include "PageSegmenter.h"
 
 // This is the definition of a method
 static PyObject* reflow(PyObject *self, PyObject *args) {

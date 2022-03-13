@@ -38,6 +38,7 @@
 #include <wchar.h>
 #include <codecvt>
 #include <cmath>
+#include <numeric>
 
 #include <allheaders.h>
 
