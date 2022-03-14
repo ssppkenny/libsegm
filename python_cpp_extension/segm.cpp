@@ -2,7 +2,30 @@
 #include <numpy/ndarraytypes.h>
 #include <numpy/ufuncobject.h>
 #include <numpy/npy_3kcompat.h>
+
+#include <structmember.h>
+#include <structseq.h>
+
+
 #include "PageSegmenter.h"
+
+static PyTypeObject GlyphResultType = {0, 0, 0, 0, 0, 0};
+
+static PyStructSequence_Field glyph_result_fields[] = {
+    {"x", "x coord"},
+    {"y", "y coord"},
+    {"width", "width"},
+    {"height", "height"},
+    {NULL}
+};
+
+static PyStructSequence_Desc glyph_result_desc = {
+    "glyph_result",
+    NULL,
+    glyph_result_fields,
+    4
+};
+
 
 // This is the definition of a method
 static PyObject* reflow(PyObject* self, PyObject *args) {
@@ -20,15 +43,16 @@ static PyObject* reflow(PyObject* self, PyObject *args) {
         dtype,
         1, 3, NPY_ARRAY_CARRAY, NULL);
 
-    if (nd >= 2) {
+    std::vector<glyph> glyphs;
 
+    if (nd >= 2) {
         cv::Mat mat = cv::Mat(cv::Size(dims[1], dims[0]), CV_8UC1, PyArray_DATA(contig));
-        cv::bitwise_not(mat, mat);
-        cv::threshold(mat, mat, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+        //cv::bitwise_not(mat, mat);
+        //cv::threshold(c, c, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
         PageSegmenter ps(mat);
-        std::vector<glyph> glyphs = ps.get_glyphs();
-        cv::imwrite("test.jpg", mat);
-        Py_DECREF(contig); 
+        glyphs = ps.get_glyphs();
+        //cv::imwrite("test.jpg", c);
+        Py_DECREF(contig);
     }
 
 
@@ -37,7 +61,33 @@ static PyObject* reflow(PyObject* self, PyObject *args) {
 
     Py_INCREF(input);
     Py_INCREF(dtype);
-    return input;
+
+
+
+   //PyObject *nt = PyStructSequence_New(&GlyphResultType);
+
+    int N = glyphs.size();
+    PyObject* list = PyList_New(N);
+    for (int i = 0; i < N; ++i) {
+        PyStructSequence* res = (PyStructSequence*) PyStructSequence_New(&GlyphResultType);
+        PyStructSequence_SET_ITEM(res, 0, PyLong_FromLong(glyphs.at(i).x));
+        PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(glyphs.at(i).y));
+        PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(glyphs.at(i).width));
+        PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(glyphs.at(i).height));
+        PyList_SetItem(list, i, (PyObject*)res);
+    }
+
+
+
+
+    //PyObject *rslt = PyTuple_New(1);
+    //PyTuple_SetItem(rslt, 0, (PyObject*)res);
+   // PyTuple_SetItem(rslt, 1, PyLong_FromLong(glyphs.at(0).y));
+   // PyTuple_SetItem(rslt, 2, PyLong_FromLong(glyphs.at(0).width));
+   // PyTuple_SetItem(rslt, 3, PyLong_FromLong(glyphs.at(0).height));
+    return list;
+
+    //return input;
 }
 
 // Exported methods are collected in a table
@@ -62,5 +112,12 @@ PyModuleDef segm_module = {
 // The module init function
 PyMODINIT_FUNC PyInit_segm(void) {
     import_array();
-    return PyModule_Create(&segm_module);
+
+    PyObject *mod = PyModule_Create(&segm_module);
+
+    if (GlyphResultType.tp_name == 0)
+        PyStructSequence_InitType(&GlyphResultType, &glyph_result_desc);
+    Py_INCREF((PyObject *) &GlyphResultType);
+    PyModule_AddObject(mod, "glyph_result", (PyObject *) &GlyphResultType);
+    return mod;
 }
