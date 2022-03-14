@@ -16,6 +16,9 @@ find_package(PythonInterp 3.9 REQUIRED)
 
 find_package(PythonLibs 3.9 REQUIRED)
 
+find_package(Python3 3.9 REQUIRED COMPONENTS NumPy)
+message(STATUS ${Python3_NumPy_INCLUDE_DIRS})
+
 exec_program(${PYTHON_EXECUTABLE}
              ARGS "-c \"import numpy; print(numpy.get_include())\""
              OUTPUT_VARIABLE NUMPY_INCLUDE_DIR
@@ -28,8 +31,11 @@ endif()
 
 include_directories( ${PYTHON_INCLUDE_DIR} )
 
-target_include_directories(python_cpp_extension PUBLIC ${PYTHON_INCLUDE_DIRS})
-target_link_libraries(python_cpp_extension ${PYTHON_LIBRARIES} segm)
+message(DEBUG ${LZ4_LIBRARIES})
+
+target_include_directories(python_cpp_extension PUBLIC ${PYTHON_INCLUDE_DIRS} ${Python3_NumPy_INCLUDE_DIRS})
+target_link_libraries(python_cpp_extension ${PYTHON_LIBRARIES} ${OpenCV_LIBRARIES} ${Leptonica_LIBRARIES} ${Lz4_LIBRARIES} segm)
+ 
 
 
 
