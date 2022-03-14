@@ -97,7 +97,7 @@ PyMethodDef method_table[] = {
 };
 
 // A struct contains the definition of a module
-PyModuleDef segm_module = {
+PyModuleDef segm__module = {
     PyModuleDef_HEAD_INIT,
     "segm", // Module name
     "image segmentation module",
@@ -113,7 +113,7 @@ PyModuleDef segm_module = {
 PyMODINIT_FUNC PyInit_segm(void) {
     import_array();
 
-    PyObject *mod = PyModule_Create(&segm_module);
+    PyObject *mod = PyModule_Create(&segm__module);
 
     if (GlyphResultType.tp_name == 0)
         PyStructSequence_InitType(&GlyphResultType, &glyph_result_desc);
