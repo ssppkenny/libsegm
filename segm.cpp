@@ -91,29 +91,25 @@ static PyObject* reflow(PyObject* self, PyObject *args) {
 }
 
 // Exported methods are collected in a table
-PyMethodDef method_table[] = {
+static PyMethodDef method_table[] = {
     {"reflow", (PyCFunction) reflow, METH_VARARGS, "reflow function reads an image ndarray and returns a reflowed image ndarray"},
     {NULL, NULL, 0, NULL} // Sentinel value ending the table
 };
 
 // A struct contains the definition of a module
-PyModuleDef segm__module = {
+static struct PyModuleDef segm_module_def = {
     PyModuleDef_HEAD_INIT,
-    "segm", // Module name
+    "_segm", // Module name
     "image segmentation module",
     -1,   // Optional size of the module state memory
-    method_table,
-    NULL, // Optional slot definitions
-    NULL, // Optional traversal function
-    NULL, // Optional clear function
-    NULL  // Optional module deallocation function
+    method_table
 };
 
 // The module init function
-PyMODINIT_FUNC PyInit_segm(void) {
+PyMODINIT_FUNC PyInit__segm(void) {
     import_array();
 
-    PyObject *mod = PyModule_Create(&segm__module);
+    PyObject *mod = PyModule_Create(&segm_module_def);
 
     if (GlyphResultType.tp_name == 0)
         PyStructSequence_InitType(&GlyphResultType, &glyph_result_desc);

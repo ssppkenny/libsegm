@@ -1,0 +1,7 @@
+/Users/sergey/code/python/libsegm/_skbuild/macosx-10.15-x86_64-3.9/cmake-build/CMakeFiles/_segm.dir
+/Users/sergey/code/python/libsegm/_skbuild/macosx-10.15-x86_64-3.9/cmake-build/CMakeFiles/edit_cache.dir
+/Users/sergey/code/python/libsegm/_skbuild/macosx-10.15-x86_64-3.9/cmake-build/CMakeFiles/rebuild_cache.dir
+/Users/sergey/code/python/libsegm/_skbuild/macosx-10.15-x86_64-3.9/cmake-build/CMakeFiles/list_install_components.dir
+/Users/sergey/code/python/libsegm/_skbuild/macosx-10.15-x86_64-3.9/cmake-build/CMakeFiles/install.dir
+/Users/sergey/code/python/libsegm/_skbuild/macosx-10.15-x86_64-3.9/cmake-build/CMakeFiles/install/local.dir
+/Users/sergey/code/python/libsegm/_skbuild/macosx-10.15-x86_64-3.9/cmake-build/CMakeFiles/install/strip.dir

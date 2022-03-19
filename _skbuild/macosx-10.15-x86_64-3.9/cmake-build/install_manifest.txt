@@ -1,0 +1,1 @@
+/Users/sergey/code/python/libsegm/_skbuild/macosx-10.15-x86_64-3.9/cmake-install/segm/_segm.cpython-39-darwin.so
