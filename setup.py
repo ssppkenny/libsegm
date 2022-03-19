@@ -1,6 +1,7 @@
 from skbuild import setup
 
 setup(
-      name="hello",
-      version="0.1"
+      name="segm",
+      version="0.1",
+      packages=["segm"]
 );

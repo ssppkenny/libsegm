@@ -1,11 +1,12 @@
 # ninja log v5
-1	5786	1647703173226471031	CMakeFiles/_segm.dir/ImageNode.cpp.o	17f018b042b9a4b8
-1	8664	1647703176090519848	CMakeFiles/_segm.dir/LineSpacing.cpp.o	c97023091543dd48
-3	10180	1647703177610096808	CMakeFiles/_segm.dir/Reflow.cpp.o	49ff9051b003e113
-0	13433	1647703180853521325	CMakeFiles/_segm.dir/Enclosure.cpp.o	e5712c5b0f599560
-0	14428	1647703181852705096	CMakeFiles/_segm.dir/common.cpp.o	9947a9edf66bc17d
-5789	17220	1647703184644536955	CMakeFiles/_segm.dir/Xycut.cpp.o	a9e043979897337c
-8673	17274	1647703184704217921	CMakeFiles/_segm.dir/segm.cpp.o	99f83b379bf84c3c
-2	23040	1647703190479615240	CMakeFiles/_segm.dir/PageSegmenter.cpp.o	49a617fa2994c1ab
-23040	23114	1647703190585900274	_segm.cpython-39-darwin.so	53a191a79a139790
-23114	23145	0	CMakeFiles/install.util	a233440cd3133df6
+1	4789	1647708047855327881	CMakeFiles/_segm.dir/segm/ImageNode.cpp.o	3898a77cf98c7683
+2	7583	1647708050617359426	CMakeFiles/_segm.dir/segm/LineSpacing.cpp.o	fca30b7632d3deb4
+3	9062	1647708052113080488	CMakeFiles/_segm.dir/segm/Reflow.cpp.o	9c81814115f24f23
+1	11368	1647708054411672096	CMakeFiles/_segm.dir/segm/Enclosure.cpp.o	25b01070bad63ee2
+1	11910	1647708054956122617	CMakeFiles/_segm.dir/segm/common.cpp.o	cda99e3dbea9cf34
+7590	13736	1647708056794228093	CMakeFiles/_segm.dir/segm/segm.cpp.o	5927dc57231d3826
+4792	13787	1647708056839400050	CMakeFiles/_segm.dir/segm/Xycut.cpp.o	d0f6d844cc53fd22
+2	19283	1647708062347249489	CMakeFiles/_segm.dir/segm/PageSegmenter.cpp.o	1a9a1bb9b760ffa6
+19283	19356	1647708062446331944	_segm.cpython-39-darwin.so	7eb321b22fb03ecb
+19356	19383	0	CMakeFiles/install.util	a233440cd3133df6
+18	41	0	CMakeFiles/install.util	a233440cd3133df6

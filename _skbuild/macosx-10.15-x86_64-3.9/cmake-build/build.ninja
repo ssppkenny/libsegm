@@ -49,83 +49,83 @@ cmake_ninja_workdir = /Users/sergey/code/python/libsegm/_skbuild/macosx-10.15-x8
 
 build cmake_object_order_depends_target__segm: phony || CMakeFiles/_segm.dir
 
-build CMakeFiles/_segm.dir/common.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/common.cpp || cmake_object_order_depends_target__segm
+build CMakeFiles/_segm.dir/segm/common.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/segm/common.cpp || cmake_object_order_depends_target__segm
   DEFINES = -DBOOST_ATOMIC_DYN_LINK -DBOOST_ATOMIC_NO_LIB -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DBOOST_GRAPH_DYN_LINK -DBOOST_GRAPH_NO_LIB -DBOOST_REGEX_DYN_LINK -DBOOST_REGEX_NO_LIB -DBOOST_SYSTEM_DYN_LINK -DBOOST_SYSTEM_NO_LIB -D_segm_EXPORTS
-  DEP_FILE = CMakeFiles/_segm.dir/common.cpp.o.d
+  DEP_FILE = CMakeFiles/_segm.dir/segm/common.cpp.o.d
   FLAGS = -O3 -DNDEBUG -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -mmacosx-version-min=10.15 -fPIC -std=gnu++11
   INCLUDES = -I/Users/sergey/.pyenv/versions/3.9.7/include/python3.9 -I/usr/local/lib/python3.9/site-packages/numpy/core/include -I/usr/local/Cellar/leptonica/1.82.0/include/leptonica -isystem /usr/local/Cellar/opencv/4.5.5/include/opencv4 -isystem /usr/local/include
   OBJECT_DIR = CMakeFiles/_segm.dir
-  OBJECT_FILE_DIR = CMakeFiles/_segm.dir
+  OBJECT_FILE_DIR = CMakeFiles/_segm.dir/segm
   TARGET_COMPILE_PDB = CMakeFiles/_segm.dir/
   TARGET_PDB = _segm.pdb
 
-build CMakeFiles/_segm.dir/Enclosure.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/Enclosure.cpp || cmake_object_order_depends_target__segm
+build CMakeFiles/_segm.dir/segm/Enclosure.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/segm/Enclosure.cpp || cmake_object_order_depends_target__segm
   DEFINES = -DBOOST_ATOMIC_DYN_LINK -DBOOST_ATOMIC_NO_LIB -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DBOOST_GRAPH_DYN_LINK -DBOOST_GRAPH_NO_LIB -DBOOST_REGEX_DYN_LINK -DBOOST_REGEX_NO_LIB -DBOOST_SYSTEM_DYN_LINK -DBOOST_SYSTEM_NO_LIB -D_segm_EXPORTS
-  DEP_FILE = CMakeFiles/_segm.dir/Enclosure.cpp.o.d
+  DEP_FILE = CMakeFiles/_segm.dir/segm/Enclosure.cpp.o.d
   FLAGS = -O3 -DNDEBUG -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -mmacosx-version-min=10.15 -fPIC -std=gnu++11
   INCLUDES = -I/Users/sergey/.pyenv/versions/3.9.7/include/python3.9 -I/usr/local/lib/python3.9/site-packages/numpy/core/include -I/usr/local/Cellar/leptonica/1.82.0/include/leptonica -isystem /usr/local/Cellar/opencv/4.5.5/include/opencv4 -isystem /usr/local/include
   OBJECT_DIR = CMakeFiles/_segm.dir
-  OBJECT_FILE_DIR = CMakeFiles/_segm.dir
+  OBJECT_FILE_DIR = CMakeFiles/_segm.dir/segm
   TARGET_COMPILE_PDB = CMakeFiles/_segm.dir/
   TARGET_PDB = _segm.pdb
 
-build CMakeFiles/_segm.dir/ImageNode.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/ImageNode.cpp || cmake_object_order_depends_target__segm
+build CMakeFiles/_segm.dir/segm/ImageNode.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/segm/ImageNode.cpp || cmake_object_order_depends_target__segm
   DEFINES = -DBOOST_ATOMIC_DYN_LINK -DBOOST_ATOMIC_NO_LIB -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DBOOST_GRAPH_DYN_LINK -DBOOST_GRAPH_NO_LIB -DBOOST_REGEX_DYN_LINK -DBOOST_REGEX_NO_LIB -DBOOST_SYSTEM_DYN_LINK -DBOOST_SYSTEM_NO_LIB -D_segm_EXPORTS
-  DEP_FILE = CMakeFiles/_segm.dir/ImageNode.cpp.o.d
+  DEP_FILE = CMakeFiles/_segm.dir/segm/ImageNode.cpp.o.d
   FLAGS = -O3 -DNDEBUG -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -mmacosx-version-min=10.15 -fPIC -std=gnu++11
   INCLUDES = -I/Users/sergey/.pyenv/versions/3.9.7/include/python3.9 -I/usr/local/lib/python3.9/site-packages/numpy/core/include -I/usr/local/Cellar/leptonica/1.82.0/include/leptonica -isystem /usr/local/Cellar/opencv/4.5.5/include/opencv4 -isystem /usr/local/include
   OBJECT_DIR = CMakeFiles/_segm.dir
-  OBJECT_FILE_DIR = CMakeFiles/_segm.dir
+  OBJECT_FILE_DIR = CMakeFiles/_segm.dir/segm
   TARGET_COMPILE_PDB = CMakeFiles/_segm.dir/
   TARGET_PDB = _segm.pdb
 
-build CMakeFiles/_segm.dir/LineSpacing.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/LineSpacing.cpp || cmake_object_order_depends_target__segm
+build CMakeFiles/_segm.dir/segm/LineSpacing.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/segm/LineSpacing.cpp || cmake_object_order_depends_target__segm
   DEFINES = -DBOOST_ATOMIC_DYN_LINK -DBOOST_ATOMIC_NO_LIB -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DBOOST_GRAPH_DYN_LINK -DBOOST_GRAPH_NO_LIB -DBOOST_REGEX_DYN_LINK -DBOOST_REGEX_NO_LIB -DBOOST_SYSTEM_DYN_LINK -DBOOST_SYSTEM_NO_LIB -D_segm_EXPORTS
-  DEP_FILE = CMakeFiles/_segm.dir/LineSpacing.cpp.o.d
+  DEP_FILE = CMakeFiles/_segm.dir/segm/LineSpacing.cpp.o.d
   FLAGS = -O3 -DNDEBUG -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -mmacosx-version-min=10.15 -fPIC -std=gnu++11
   INCLUDES = -I/Users/sergey/.pyenv/versions/3.9.7/include/python3.9 -I/usr/local/lib/python3.9/site-packages/numpy/core/include -I/usr/local/Cellar/leptonica/1.82.0/include/leptonica -isystem /usr/local/Cellar/opencv/4.5.5/include/opencv4 -isystem /usr/local/include
   OBJECT_DIR = CMakeFiles/_segm.dir
-  OBJECT_FILE_DIR = CMakeFiles/_segm.dir
+  OBJECT_FILE_DIR = CMakeFiles/_segm.dir/segm
   TARGET_COMPILE_PDB = CMakeFiles/_segm.dir/
   TARGET_PDB = _segm.pdb
 
-build CMakeFiles/_segm.dir/PageSegmenter.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/PageSegmenter.cpp || cmake_object_order_depends_target__segm
+build CMakeFiles/_segm.dir/segm/PageSegmenter.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/segm/PageSegmenter.cpp || cmake_object_order_depends_target__segm
   DEFINES = -DBOOST_ATOMIC_DYN_LINK -DBOOST_ATOMIC_NO_LIB -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DBOOST_GRAPH_DYN_LINK -DBOOST_GRAPH_NO_LIB -DBOOST_REGEX_DYN_LINK -DBOOST_REGEX_NO_LIB -DBOOST_SYSTEM_DYN_LINK -DBOOST_SYSTEM_NO_LIB -D_segm_EXPORTS
-  DEP_FILE = CMakeFiles/_segm.dir/PageSegmenter.cpp.o.d
+  DEP_FILE = CMakeFiles/_segm.dir/segm/PageSegmenter.cpp.o.d
   FLAGS = -O3 -DNDEBUG -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -mmacosx-version-min=10.15 -fPIC -std=gnu++11
   INCLUDES = -I/Users/sergey/.pyenv/versions/3.9.7/include/python3.9 -I/usr/local/lib/python3.9/site-packages/numpy/core/include -I/usr/local/Cellar/leptonica/1.82.0/include/leptonica -isystem /usr/local/Cellar/opencv/4.5.5/include/opencv4 -isystem /usr/local/include
   OBJECT_DIR = CMakeFiles/_segm.dir
-  OBJECT_FILE_DIR = CMakeFiles/_segm.dir
+  OBJECT_FILE_DIR = CMakeFiles/_segm.dir/segm
   TARGET_COMPILE_PDB = CMakeFiles/_segm.dir/
   TARGET_PDB = _segm.pdb
 
-build CMakeFiles/_segm.dir/Reflow.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/Reflow.cpp || cmake_object_order_depends_target__segm
+build CMakeFiles/_segm.dir/segm/Reflow.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/segm/Reflow.cpp || cmake_object_order_depends_target__segm
   DEFINES = -DBOOST_ATOMIC_DYN_LINK -DBOOST_ATOMIC_NO_LIB -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DBOOST_GRAPH_DYN_LINK -DBOOST_GRAPH_NO_LIB -DBOOST_REGEX_DYN_LINK -DBOOST_REGEX_NO_LIB -DBOOST_SYSTEM_DYN_LINK -DBOOST_SYSTEM_NO_LIB -D_segm_EXPORTS
-  DEP_FILE = CMakeFiles/_segm.dir/Reflow.cpp.o.d
+  DEP_FILE = CMakeFiles/_segm.dir/segm/Reflow.cpp.o.d
   FLAGS = -O3 -DNDEBUG -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -mmacosx-version-min=10.15 -fPIC -std=gnu++11
   INCLUDES = -I/Users/sergey/.pyenv/versions/3.9.7/include/python3.9 -I/usr/local/lib/python3.9/site-packages/numpy/core/include -I/usr/local/Cellar/leptonica/1.82.0/include/leptonica -isystem /usr/local/Cellar/opencv/4.5.5/include/opencv4 -isystem /usr/local/include
   OBJECT_DIR = CMakeFiles/_segm.dir
-  OBJECT_FILE_DIR = CMakeFiles/_segm.dir
+  OBJECT_FILE_DIR = CMakeFiles/_segm.dir/segm
   TARGET_COMPILE_PDB = CMakeFiles/_segm.dir/
   TARGET_PDB = _segm.pdb
 
-build CMakeFiles/_segm.dir/Xycut.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/Xycut.cpp || cmake_object_order_depends_target__segm
+build CMakeFiles/_segm.dir/segm/Xycut.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/segm/Xycut.cpp || cmake_object_order_depends_target__segm
   DEFINES = -DBOOST_ATOMIC_DYN_LINK -DBOOST_ATOMIC_NO_LIB -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DBOOST_GRAPH_DYN_LINK -DBOOST_GRAPH_NO_LIB -DBOOST_REGEX_DYN_LINK -DBOOST_REGEX_NO_LIB -DBOOST_SYSTEM_DYN_LINK -DBOOST_SYSTEM_NO_LIB -D_segm_EXPORTS
-  DEP_FILE = CMakeFiles/_segm.dir/Xycut.cpp.o.d
+  DEP_FILE = CMakeFiles/_segm.dir/segm/Xycut.cpp.o.d
   FLAGS = -O3 -DNDEBUG -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -mmacosx-version-min=10.15 -fPIC -std=gnu++11
   INCLUDES = -I/Users/sergey/.pyenv/versions/3.9.7/include/python3.9 -I/usr/local/lib/python3.9/site-packages/numpy/core/include -I/usr/local/Cellar/leptonica/1.82.0/include/leptonica -isystem /usr/local/Cellar/opencv/4.5.5/include/opencv4 -isystem /usr/local/include
   OBJECT_DIR = CMakeFiles/_segm.dir
-  OBJECT_FILE_DIR = CMakeFiles/_segm.dir
+  OBJECT_FILE_DIR = CMakeFiles/_segm.dir/segm
   TARGET_COMPILE_PDB = CMakeFiles/_segm.dir/
   TARGET_PDB = _segm.pdb
 
-build CMakeFiles/_segm.dir/segm.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/segm.cpp || cmake_object_order_depends_target__segm
+build CMakeFiles/_segm.dir/segm/segm.cpp.o: CXX_COMPILER___segm_Release /Users/sergey/code/python/libsegm/segm/segm.cpp || cmake_object_order_depends_target__segm
   DEFINES = -DBOOST_ATOMIC_DYN_LINK -DBOOST_ATOMIC_NO_LIB -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DBOOST_GRAPH_DYN_LINK -DBOOST_GRAPH_NO_LIB -DBOOST_REGEX_DYN_LINK -DBOOST_REGEX_NO_LIB -DBOOST_SYSTEM_DYN_LINK -DBOOST_SYSTEM_NO_LIB -D_segm_EXPORTS
-  DEP_FILE = CMakeFiles/_segm.dir/segm.cpp.o.d
+  DEP_FILE = CMakeFiles/_segm.dir/segm/segm.cpp.o.d
   FLAGS = -O3 -DNDEBUG -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -mmacosx-version-min=10.15 -fPIC -std=gnu++11
   INCLUDES = -I/Users/sergey/.pyenv/versions/3.9.7/include/python3.9 -I/usr/local/lib/python3.9/site-packages/numpy/core/include -I/usr/local/Cellar/leptonica/1.82.0/include/leptonica -isystem /usr/local/Cellar/opencv/4.5.5/include/opencv4 -isystem /usr/local/include
   OBJECT_DIR = CMakeFiles/_segm.dir
-  OBJECT_FILE_DIR = CMakeFiles/_segm.dir
+  OBJECT_FILE_DIR = CMakeFiles/_segm.dir/segm
   TARGET_COMPILE_PDB = CMakeFiles/_segm.dir/
   TARGET_PDB = _segm.pdb
 
@@ -137,7 +137,7 @@ build CMakeFiles/_segm.dir/segm.cpp.o: CXX_COMPILER___segm_Release /Users/sergey
 #############################################
 # Link the shared module _segm.cpython-39-darwin.so
 
-build _segm.cpython-39-darwin.so: CXX_MODULE_LIBRARY_LINKER___segm_Release CMakeFiles/_segm.dir/common.cpp.o CMakeFiles/_segm.dir/Enclosure.cpp.o CMakeFiles/_segm.dir/ImageNode.cpp.o CMakeFiles/_segm.dir/LineSpacing.cpp.o CMakeFiles/_segm.dir/PageSegmenter.cpp.o CMakeFiles/_segm.dir/Reflow.cpp.o CMakeFiles/_segm.dir/Xycut.cpp.o CMakeFiles/_segm.dir/segm.cpp.o | /usr/local/lib/libboost_system-mt.dylib /usr/local/lib/libboost_filesystem-mt.dylib /usr/local/lib/libboost_graph-mt.dylib /usr/local/lib/libopencv_imgcodecs.4.5.5.dylib /usr/local/lib/libboost_atomic-mt.dylib /usr/local/lib/libboost_regex-mt.dylib /usr/local/lib/libopencv_imgproc.4.5.5.dylib /usr/local/lib/libopencv_core.4.5.5.dylib
+build _segm.cpython-39-darwin.so: CXX_MODULE_LIBRARY_LINKER___segm_Release CMakeFiles/_segm.dir/segm/common.cpp.o CMakeFiles/_segm.dir/segm/Enclosure.cpp.o CMakeFiles/_segm.dir/segm/ImageNode.cpp.o CMakeFiles/_segm.dir/segm/LineSpacing.cpp.o CMakeFiles/_segm.dir/segm/PageSegmenter.cpp.o CMakeFiles/_segm.dir/segm/Reflow.cpp.o CMakeFiles/_segm.dir/segm/Xycut.cpp.o CMakeFiles/_segm.dir/segm/segm.cpp.o | /usr/local/lib/libboost_system-mt.dylib /usr/local/lib/libboost_filesystem-mt.dylib /usr/local/lib/libboost_graph-mt.dylib /usr/local/lib/libopencv_imgcodecs.4.5.5.dylib /usr/local/lib/libboost_atomic-mt.dylib /usr/local/lib/libboost_regex-mt.dylib /usr/local/lib/libopencv_imgproc.4.5.5.dylib /usr/local/lib/libopencv_core.4.5.5.dylib
   ARCH_FLAGS = -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -mmacosx-version-min=10.15
   LANGUAGE_COMPILE_FLAGS = -O3 -DNDEBUG
   LINK_FLAGS = -undefined dynamic_lookup
