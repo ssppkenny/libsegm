@@ -8,10 +8,10 @@ set(ignoreMe "${SKBUILD}")
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_CXX_STANDARD 11)
 
-set(MINIMUM_LEPTONICA_VERSION 1.82)
+set(MINIMUM_LEPTONICA_VERSION 1.79)
 set(MINIMUM_FLANN_VERSION 1.9.1)
 
-find_package(Boost 1.78.0 COMPONENTS system filesystem graph) 
+find_package(Boost 1.74.0 COMPONENTS system filesystem graph) 
 
 
 find_package( OpenCV REQUIRED core imgproc imgcodecs core)
