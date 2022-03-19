@@ -1,9 +1,0 @@
-pyproject.toml
-setup.py
-_skbuild/macosx-10.15-x86_64-3.9/cmake-install/segm/__init__.py
-_skbuild/macosx-10.15-x86_64-3.9/cmake-install/segm/_segm.cpython-39-darwin.so
-segm.egg-info/PKG-INFO
-segm.egg-info/SOURCES.txt
-segm.egg-info/dependency_links.txt
-segm.egg-info/not-zip-safe
-segm.egg-info/top_level.txt
