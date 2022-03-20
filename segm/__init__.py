@@ -1,7 +1,7 @@
 from ._segm import *
 
-def get_glyphs(img):
-    return reflow(img, img.dtype)
+def find_glyphs(img):
+    return get_glyphs(img, img.dtype)
 
 
 

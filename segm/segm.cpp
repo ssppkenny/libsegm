@@ -28,7 +28,7 @@ static PyStructSequence_Desc glyph_result_desc = {
 
 
 // This is the definition of a method
-static PyObject* reflow(PyObject* self, PyObject *args) {
+static PyObject* get_glyphs(PyObject* self, PyObject *args) {
     PyObject *input;
     PyArray_Descr *dtype = NULL;
     if (!PyArg_ParseTuple(args, "OO&", &input, PyArray_DescrConverter, &dtype)) {
@@ -92,7 +92,7 @@ static PyObject* reflow(PyObject* self, PyObject *args) {
 
 // Exported methods are collected in a table
 static PyMethodDef method_table[] = {
-    {"reflow", (PyCFunction) reflow, METH_VARARGS, "reflow function reads an image ndarray and returns a reflowed image ndarray"},
+    {"get_glyphs", (PyCFunction) get_glyphs, METH_VARARGS, "get_glyphs finds all glyphs (letters) in an image"},
     {NULL, NULL, 0, NULL} // Sentinel value ending the table
 };
 

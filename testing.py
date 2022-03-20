@@ -1,11 +1,11 @@
-import _segm
+import segm
 import cv2
 
 def segment_image(image_path):
     img = cv2.imread(image_path)
     g = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     _, new_g  = cv2.threshold(g, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
-    s = _segm.reflow(new_g, new_g.dtype)
+    s = segm.find_glyphs(new_g)
     return s, img
 
 
