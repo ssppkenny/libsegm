@@ -1,5 +1,5 @@
 ```python
-from segm import get_glyphs
+from segm import find_glyphs
 import cv2
 import matplotlib.pyplot as plt
 ```
@@ -10,7 +10,7 @@ def segment_image(image_path):
     img = cv2.imread(image_path)
     g = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     _, new_g  = cv2.threshold(g, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
-    s = get_glyphs(new_g)
+    s = find_glyphs(new_g)
     return s, img
 
 
@@ -34,7 +34,7 @@ plt.imshow(img)
 
 
 
-    <matplotlib.image.AxesImage at 0x13bd94fd0>
+    <matplotlib.image.AxesImage at 0x13ba25fd0>
 
 
 
