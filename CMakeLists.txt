@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
 project(segm)
 ## common.cpp Enclosure.cpp ImageNode.cpp LineSpacing.cpp PageSegmenter.cpp Reflow.cpp Xycut.cpp segm.cpp )
-set(SRCS segm/common.cpp segm/Enclosure.cpp segm/ImageNode.cpp segm/LineSpacing.cpp segm/PageSegmenter.cpp segm/Reflow.cpp segm/Xycut.cpp segm/segm.cpp) 
+set(SRCS segm/common.cpp segm/Enclosure.cpp segm/ImageNode.cpp segm/LineSpacing.cpp segm/PageSegmenter.cpp segm/RectJoin.cpp segm/Reflow.cpp segm/Xycut.cpp segm/segm.cpp) 
 
 set(ignoreMe "${SKBUILD}")
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 set(MINIMUM_LEPTONICA_VERSION 1.79)
 set(MINIMUM_FLANN_VERSION 1.9.1)

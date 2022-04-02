@@ -8,6 +8,7 @@
 
 
 #include "PageSegmenter.h"
+#include "RectJoin.h"
 
 static PyTypeObject GlyphResultType = {0, 0, 0, 0, 0, 0};
 
@@ -26,6 +27,50 @@ static PyStructSequence_Desc glyph_result_desc = {
     4
 };
 
+static PyObject* get_joined_rects(PyObject* self, PyObject *args) {
+    PyObject *input;
+    PyArray_Descr *dtype = NULL;
+    if (!PyArg_ParseTuple(args, "OO&", &input, PyArray_DescrConverter, &dtype)) {
+        return NULL;
+    }
+
+
+    int nd = PyArray_NDIM(input);
+    npy_intp* dims = PyArray_DIMS(input);
+
+    PyArrayObject* contig = (PyArrayObject*)PyArray_FromAny(input,
+        dtype,
+        1, 3, NPY_ARRAY_CARRAY, NULL);
+
+    std::vector<glyph> glyphs;
+
+    if (nd >= 2) {
+        cv::Mat mat = cv::Mat(cv::Size(dims[1], dims[0]), CV_8UC1, PyArray_DATA(contig));
+        //cv::bitwise_not(mat, mat);
+        //cv::threshold(c, c, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+        //cv::imwrite("test.jpg", c);
+        Py_DECREF(contig);
+    }
+
+
+    Py_INCREF(input);
+    Py_INCREF(dtype);
+
+
+
+   //PyObject *nt = PyStructSequence_New(&GlyphResultType);
+    std::vector<cv::Rect> rects;
+    int N = rects.size();
+    PyObject* list = PyList_New(N);
+    for (int i = 0; i < N; ++i) {
+        PyStructSequence* res = (PyStructSequence*) PyStructSequence_New(&GlyphResultType);
+        PyStructSequence_SET_ITEM(res, 0, PyLong_FromLong(rects.at(i).x));
+        PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(rects.at(i).y));
+        PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(rects.at(i).width));
+        PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(rects.at(i).height));
+        PyList_SetItem(list, i, (PyObject*)res);
+    }
+}
 
 // This is the definition of a method
 static PyObject* get_glyphs(PyObject* self, PyObject *args) {
@@ -93,6 +138,7 @@ static PyObject* get_glyphs(PyObject* self, PyObject *args) {
 // Exported methods are collected in a table
 static PyMethodDef method_table[] = {
     {"get_glyphs", (PyCFunction) get_glyphs, METH_VARARGS, "get_glyphs finds all glyphs (letters) in an image"},
+    {"get_joined_rects", (PyCFunction) get_joined_rects, METH_VARARGS, "get_joined_rects finds all interecting rectangles and joines them, returns joined rectangles"},
     {NULL, NULL, 0, NULL} // Sentinel value ending the table
 };
 
