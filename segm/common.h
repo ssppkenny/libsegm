@@ -51,11 +51,13 @@ using namespace std;
 
 using namespace boost;
 
-typedef struct segment_struct {
+typedef struct segment_struct
+{
     int y, height;
 } segment;
 
-typedef struct glyph_struct {
+typedef struct glyph_struct
+{
     bool indented;
     int x, y, width, height, line_height, baseline_shift;
     int is_space = 0;
@@ -63,7 +65,8 @@ typedef struct glyph_struct {
     int is_picture = 0;
 } glyph;
 
-struct image_format {
+struct image_format
+{
     int w;
     int h;
     int size;
@@ -72,8 +75,10 @@ public:
     image_format(int w, int h, int size, int resolution) : w(w), h(h), size(size), resolution(resolution) {}
 };
 
-struct SortSegments {
-    bool operator()(std::tuple<int,char> const &lhs, std::tuple<int,char> const &rhs) {
+struct SortSegments
+{
+    bool operator()(std::tuple<int,char> const &lhs, std::tuple<int,char> const &rhs)
+    {
         return get<0>(lhs) < get<0>(rhs);
     }
 };

@@ -9,7 +9,8 @@
 #include "common.h"
 
 
-Output Xycut::image_without_white_borders(cv::Mat& img) {
+Output Xycut::image_without_white_borders(cv::Mat& img)
+{
     cv::Mat hist;
     //horizontal
     reduce(img, hist, 0, cv::REDUCE_SUM, CV_32F);
@@ -34,8 +35,10 @@ Output Xycut::image_without_white_borders(cv::Mat& img) {
     out.y = upper;
     return out;
 }
-void Xycut::xycut_vertical_find(cv::Mat img, double threshold, int level, int height, int width, std::vector<int>& lst){
-    if (level == 3) {
+void Xycut::xycut_vertical_find(cv::Mat img, double threshold, int level, int height, int width, std::vector<int>& lst)
+{
+    if (level == 3)
+    {
         return;
     }
     cv::Size s = img.size();
@@ -47,15 +50,18 @@ void Xycut::xycut_vertical_find(cv::Mat img, double threshold, int level, int he
     std::vector<std::tuple<int,int>> zr = zero_runs(hist);
 
     std::vector<std::tuple<int,int>> zr1;
-    for (int i=0;i<zr.size();i++){
+    for (int i=0; i<zr.size(); i++)
+    {
         int f = std::get<0>(zr.at(i));
         int t = std::get<1>(zr.at(i));
-        if (t-f>threshold){
+        if (t-f>threshold)
+        {
             zr1.push_back(zr.at(i));
         }
     }
 
-    if (zr1.size() > 0) {
+    if (zr1.size() > 0)
+    {
         int maxind = max_ind(zr1);
         int _from = std::get<0>(zr1.at(maxind));
         int _to = std::get<1>(zr1.at(maxind));
@@ -66,7 +72,8 @@ void Xycut::xycut_vertical_find(cv::Mat img, double threshold, int level, int he
         cv::Size s = left_image.size();
         int h = s.height;
         int w = s.width;
-        if (h > height && w > 1) {
+        if (h > height && w > 1)
+        {
             xycut_horizontal_find(left_image, threshold, 1, height, width, lst);
         }
         cv::Mat right_image = img(right_rect);
@@ -74,7 +81,8 @@ void Xycut::xycut_vertical_find(cv::Mat img, double threshold, int level, int he
         h = s.height;
         w = s.width;
 
-        if (h>height && w >1) {
+        if (h>height && w >1)
+        {
             xycut_vertical_find(right_image, threshold, 1, height, width, lst);
         }
         return;
@@ -82,8 +90,10 @@ void Xycut::xycut_vertical_find(cv::Mat img, double threshold, int level, int he
 
     xycut_horizontal_find(img, threshold, level+1, height, width, lst);
 }
-void Xycut::xycut_horizontal_find(cv::Mat img, double threshold, int level, int height, int width, std::vector<int>& lst){
-    if (level == 3) {
+void Xycut::xycut_horizontal_find(cv::Mat img, double threshold, int level, int height, int width, std::vector<int>& lst)
+{
+    if (level == 3)
+    {
         return;
     }
     cv::Size s = img.size();
@@ -95,15 +105,18 @@ void Xycut::xycut_horizontal_find(cv::Mat img, double threshold, int level, int 
     std::vector<std::tuple<int,int>> zr = zero_runs(hist);
 
     std::vector<std::tuple<int,int>> zr1;
-    for (int i=0;i<zr.size();i++){
+    for (int i=0; i<zr.size(); i++)
+    {
         int f = std::get<0>(zr.at(i));
         int t = std::get<1>(zr.at(i));
-        if (t-f>threshold){
+        if (t-f>threshold)
+        {
             zr1.push_back(zr.at(i));
         }
     }
 
-    if (zr1.size() > 0 && w > width / 2) {
+    if (zr1.size() > 0 && w > width / 2)
+    {
         int maxind = max_ind(zr1);
         int _from = std::get<0>(zr1.at(maxind));
         int _to = std::get<1>(zr1.at(maxind));
@@ -114,14 +127,16 @@ void Xycut::xycut_horizontal_find(cv::Mat img, double threshold, int level, int 
         cv::Size s = upper_image.size();
         int h = s.height;
         int w = s.width;
-        if (h > height && w > 1) {
+        if (h > height && w > 1)
+        {
             xycut_vertical_find(upper_image, threshold, 1, height, width, lst);
         }
         cv::Mat lower_image = img(lower_rect);
         s = lower_image.size();
         h = s.height;
         w = s.width;
-        if (h > height && w > 1)  {
+        if (h > height && w > 1)
+        {
             xycut_horizontal_find(lower_image, threshold, 1, height, width, lst);
         }
         return;
@@ -129,8 +144,10 @@ void Xycut::xycut_horizontal_find(cv::Mat img, double threshold, int level, int 
     xycut_vertical_find(img, threshold, level+1, height, width, lst);
 }
 
-void Xycut::xycut_vertical_cut(cv::Mat img, double threshold, ImageNode* tree, int level,  int height, int width){
-    if (level == 3) {
+void Xycut::xycut_vertical_cut(cv::Mat img, double threshold, ImageNode* tree, int level,  int height, int width)
+{
+    if (level == 3)
+    {
         return;
     }
     cv::Size s = img.size();
@@ -142,15 +159,18 @@ void Xycut::xycut_vertical_cut(cv::Mat img, double threshold, ImageNode* tree, i
     std::vector<std::tuple<int,int>> zr = zero_runs(hist);
 
     std::vector<std::tuple<int,int>> zr1;
-    for (int i=0;i<zr.size();i++){
+    for (int i=0; i<zr.size(); i++)
+    {
         int f = std::get<0>(zr.at(i));
         int t = std::get<1>(zr.at(i));
-        if (t-f>threshold){
+        if (t-f>threshold)
+        {
             zr1.push_back(zr.at(i));
         }
     }
 
-    if (zr1.size() > 0 && w > width / 2) {
+    if (zr1.size() > 0 && w > width / 2)
+    {
         int maxind = max_ind(zr1);
         int _from = std::get<0>(zr1.at(maxind));
         int _to = std::get<1>(zr1.at(maxind));
@@ -160,7 +180,8 @@ void Xycut::xycut_vertical_cut(cv::Mat img, double threshold, ImageNode* tree, i
         cv::Size s = left_image.size();
         int h = s.height;
         int w = s.width;
-        if (h > height && w > 1) {
+        if (h > height && w > 1)
+        {
             ImageNode lt(left_image, tree->get_x(), tree->get_y());
             ImageNode *left_tree = new ImageNode(lt);
             tree->set_left(left_tree);
@@ -171,7 +192,8 @@ void Xycut::xycut_vertical_cut(cv::Mat img, double threshold, ImageNode* tree, i
         h = s.height;
         w = s.width;
 
-        if (h>height && w >1) {
+        if (h>height && w >1)
+        {
             ImageNode rt(right_image, _to + tree->get_x(), tree->get_y());
             ImageNode* right_tree = new ImageNode(rt);
             tree->set_right(right_tree);
@@ -184,8 +206,10 @@ void Xycut::xycut_vertical_cut(cv::Mat img, double threshold, ImageNode* tree, i
 };
 
 
-void Xycut::xycut_horizontal_cut(cv::Mat img, double threshold, ImageNode* tree, int level, int height, int width){
-    if (level == 3) {
+void Xycut::xycut_horizontal_cut(cv::Mat img, double threshold, ImageNode* tree, int level, int height, int width)
+{
+    if (level == 3)
+    {
         return;
     }
     cv::Size s = img.size();
@@ -197,15 +221,18 @@ void Xycut::xycut_horizontal_cut(cv::Mat img, double threshold, ImageNode* tree,
     std::vector<std::tuple<int,int>> zr = zero_runs(hist);
 
     std::vector<std::tuple<int,int>> zr1;
-    for (int i=0;i<zr.size();i++){
+    for (int i=0; i<zr.size(); i++)
+    {
         int f = std::get<0>(zr.at(i));
         int t = std::get<1>(zr.at(i));
-        if (t-f>threshold){
+        if (t-f>threshold)
+        {
             zr1.push_back(zr.at(i));
         }
     }
 
-    if (zr1.size() > 0) {
+    if (zr1.size() > 0)
+    {
         int maxind = max_ind(zr1);
         int _from = std::get<0>(zr1.at(maxind));
         int _to = std::get<1>(zr1.at(maxind));
@@ -215,7 +242,8 @@ void Xycut::xycut_horizontal_cut(cv::Mat img, double threshold, ImageNode* tree,
         cv::Size s = upper_image.size();
         int h = s.height;
         int w = s.width;
-        if (h > height && w > 1) {
+        if (h > height && w > 1)
+        {
             ImageNode ut(upper_image, tree->get_x(), tree->get_y());
             ImageNode* upper_tree = new ImageNode(ut);
             tree->set_left(upper_tree);
@@ -225,7 +253,8 @@ void Xycut::xycut_horizontal_cut(cv::Mat img, double threshold, ImageNode* tree,
         s = lower_image.size();
         h = s.height;
         w = s.width;
-        if (h > height && w > 1)  {
+        if (h > height && w > 1)
+        {
             ImageNode lt(lower_image, tree->get_x(), _to + tree->get_y());
             ImageNode* lower_tree = new ImageNode(lt);
             tree->set_right(lower_tree);
@@ -236,7 +265,8 @@ void Xycut::xycut_horizontal_cut(cv::Mat img, double threshold, ImageNode* tree,
     xycut_vertical_cut(img, threshold, tree, level+1, height, width);
 };
 
-std::vector<ImageNode> Xycut::xycut() {
+std::vector<ImageNode> Xycut::xycut()
+{
     cv::Mat copy = image.clone();
     //cv::threshold(copy, copy, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
     //cv::bitwise_not(copy,copy);
@@ -258,26 +288,32 @@ std::vector<ImageNode> Xycut::xycut() {
 
     std::vector<cv::Rect> big_rects;
 
-    for (int i = 1; i < rectComponents.rows; i++) {
+    for (int i = 1; i < rectComponents.rows; i++)
+    {
         int h = rectComponents.at<int>(cv::Point(3, i));
         int w = rectComponents.at<int>(cv::Point(2, i));
         int x = rectComponents.at<int>(cv::Point(0, i));
         int y = rectComponents.at<int>(cv::Point(1, i));
-        if (h/w < 50) {
+        if (h/w < 50)
+        {
             heights.push_back(h);
-        } else {
+        }
+        else
+        {
             big_rects.push_back(cv::Rect(x,y,w,h));
         }
     }
 
-    if (count == 0) {
+    if (count == 0)
+    {
         ImageNode node(image, 0,0);
         std::vector<ImageNode> images;
         images.push_back(node);
         return images;
     }
 
-    for (int i=0;i<big_rects.size();i++) {
+    for (int i=0; i<big_rects.size(); i++)
+    {
         copy(big_rects.at(i)).setTo(0);
     }
 
@@ -294,18 +330,22 @@ std::vector<ImageNode> Xycut::xycut() {
     xycut_vertical_find(wo_borders, height, 0, height, image.size().width, lst);
     std::vector<int>::iterator result = std::min_element(lst.begin(), lst.end());
 
-    if (result != lst.end()) {
+    if (result != lst.end())
+    {
         int threshold = (*result) - 1 ;
         xycut_vertical_cut(wo_borders, threshold, &tree, 0, height, image.size().width);
         int size = tree.to_vector().size();
-        if (size > 20) {
+        if (size > 20)
+        {
             ImageNode node(image, 0,0);
             std::vector<ImageNode> v;
             v.push_back(node);
             return v;
         }
         return tree.to_vector();
-    } else {
+    }
+    else
+    {
         ImageNode node(image, 0,0);
         std::vector<ImageNode> v;
         v.push_back(node);

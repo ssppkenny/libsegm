@@ -11,13 +11,14 @@
 
 #include "common.h"
 
-class LineSpacing {
+class LineSpacing
+{
 
-    public:
-        LineSpacing(std::vector<int> heights) : heights(heights) {}
-        std::vector<int> get_line_heights();
-    private:
-        std::vector<int> heights;
+public:
+    LineSpacing(std::vector<int> heights) : heights(heights) {}
+    std::vector<int> get_line_heights();
+private:
+    std::vector<int> heights;
 
 };
 

@@ -3,12 +3,14 @@
 #include "common.h"
 #include "interval_tree.hpp"
 
-enum sweep_type {
-   Left = 0,
-   Right = 1
+enum sweep_type
+{
+    Left = 0,
+    Right = 1
 };
 
-struct sweep_event {
+struct sweep_event
+{
     int x;
     cv::Rect rect;
     sweep_type type;

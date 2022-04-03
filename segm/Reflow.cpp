@@ -9,14 +9,16 @@
 #include "Reflow.h"
 #include "LineSpacing.h"
 
-std::vector<int> Reflow::calculate_line_heights(std::vector<int> line_heights) {
+std::vector<int> Reflow::calculate_line_heights(std::vector<int> line_heights)
+{
 
     std::vector<int> new_line_heights;
     std::vector<int>::iterator result = std::min_element(line_heights.begin(), line_heights.end());
     int min_height = *result;
     int addition = (float)min_height/3.0;
 
-    for (int i=0;i<line_heights.size(); i++) {
+    for (int i=0; i<line_heights.size(); i++)
+    {
         new_line_heights.push_back(line_heights.at(i) + addition);
     }
 
@@ -25,7 +27,8 @@ std::vector<int> Reflow::calculate_line_heights(std::vector<int> line_heights) {
 }
 
 
-cv::Mat Reflow::reflow(float scale, int page_width, float margin) {
+cv::Mat Reflow::reflow(float scale, int page_width, float margin)
+{
 
     int new_width = page_width;
     //scale = portrait ? scale : scale * screen_ratio;
@@ -48,39 +51,49 @@ cv::Mat Reflow::reflow(float scale, int page_width, float margin) {
     std::vector<glyph> line;
     bool last = false;
 
-    for (int i=0; i<glyphs.size(); i++) {
+    for (int i=0; i<glyphs.size(); i++)
+    {
         glyph g = glyphs.at(i);
-        
+
 
         bool indented = g.indented;
         int new_symbol_width = ceil(g.width * scale);
         int new_symbol_height = ceil(g.height * scale);
-        if (new_symbol_height > max_symbol_height) {
+        if (new_symbol_height > max_symbol_height)
+        {
             max_symbol_height = new_symbol_height;
         }
 
-        if (g.is_space && line.empty()) {
+        if (g.is_space && line.empty())
+        {
             continue;
         }
 
-        if (last || g.indented) {
+        if (last || g.indented)
+        {
             line_sum += paragraph_indent;
         }
 
-        if (line_sum + new_symbol_width < new_width - left_margin && !indented) {
+        if (line_sum + new_symbol_width < new_width - left_margin && !indented)
+        {
             line.push_back(g);
             line_sum += new_symbol_width;
             glyph_number_to_line_number.insert(std::make_pair(i, line_number));
 
-        } else {
+        }
+        else
+        {
 
-            if (line.size() > 0) {
+            if (line.size() > 0)
+            {
                 lines.insert(std::make_pair(line_number, line));
             }
 
-            if (new_symbol_width <= new_width - 2*left_margin) {
+            if (new_symbol_width <= new_width - 2*left_margin)
+            {
 
-                if (line.size() > 0) {
+                if (line.size() > 0)
+                {
                     line_number++;
                 }
 
@@ -89,10 +102,13 @@ cv::Mat Reflow::reflow(float scale, int page_width, float margin) {
                 max_symbol_height = new_symbol_height;
                 glyph_number_to_line_number.insert(std::make_pair(i, line_number));
                 line.push_back(g);
-                if (last || g.indented) {
+                if (last || g.indented)
+                {
                     line_sum += paragraph_indent;
                 }
-            } else {
+            }
+            else
+            {
                 // this big glyph must be on a new line
 
                 int scaled_symbol_width = new_width - 2*left_margin;
@@ -102,7 +118,8 @@ cv::Mat Reflow::reflow(float scale, int page_width, float margin) {
 
                 line = std::vector<glyph>();
                 line.push_back(g);
-                if (line_number > 0) {
+                if (line_number > 0)
+                {
                     line_number++;
                 }
 
@@ -118,12 +135,14 @@ cv::Mat Reflow::reflow(float scale, int page_width, float margin) {
 
     }
 
-    if (line.size() > 0) {
+    if (line.size() > 0)
+    {
         lines.insert(std::make_pair(line_number, line));
     }
 
     std::vector<int> line_numbers;;
-    for (auto const& element : lines) {
+    for (auto const& element : lines)
+    {
         line_numbers.push_back(element.first);
     }
 
@@ -132,20 +151,25 @@ cv::Mat Reflow::reflow(float scale, int page_width, float margin) {
 
     line_heights = std::vector<int>();
     int g_counter = 0;
-    for (int k=0; k<=line_number; k++) {
+    for (int k=0; k<=line_number; k++)
+    {
         std::vector<glyph> glyphs = lines.at(k);
         int m = 0;
-        for (int l=0;l<glyphs.size(); l++) {
+        for (int l=0; l<glyphs.size(); l++)
+        {
             glyph g = glyphs.at(l);
-             if (l==0 && g.is_space) {
-                 g_counter++;
-                 continue;
-             }
+            if (l==0 && g.is_space)
+            {
+                g_counter++;
+                continue;
+            }
             int new_symbol_height = ceil(g.height * scale);
-            if (scaled_glyphs.find(g_counter) != scaled_glyphs.end()) {
+            if (scaled_glyphs.find(g_counter) != scaled_glyphs.end())
+            {
                 new_symbol_height = scaled_glyphs.at(g_counter);
             }
-            if (new_symbol_height > m) {
+            if (new_symbol_height > m)
+            {
                 m = new_symbol_height;
             }
             g_counter++;
@@ -167,20 +191,24 @@ cv::Mat Reflow::reflow(float scale, int page_width, float margin) {
     current_vert_pos = top_margin;
 
 
-    for (int i=0; i<=line_number; i++) {
+    for (int i=0; i<=line_number; i++)
+    {
         std::vector<glyph> glyphs = lines.at(i);
         int line_height = line_heights.at(i);
         //cv::line(new_image, cv::Point(0,current_vert_pos), cv::Point(new_width, current_vert_pos), cv::Scalar(255), 5);
         line_sum = left_margin ;
         last = false;
-        for (int j=0;j<glyphs.size(); j++) {
+        for (int j=0; j<glyphs.size(); j++)
+        {
             glyph g = glyphs.at(j);
-            
-            if (j==0 && g.is_space) {
+
+            if (j==0 && g.is_space)
+            {
                 continue;
             }
 
-            if (last || g.indented) {
+            if (last || g.indented)
+            {
                 line_sum += paragraph_indent;
             }
 
@@ -193,14 +221,19 @@ cv::Mat Reflow::reflow(float scale, int page_width, float margin) {
             int x_pos = line_sum;
 
             int y_pos = (current_vert_pos + line_height) + (g.baseline_shift - g.height)*scale;
-            if (x_pos + new_symbol_width < new_width - left_margin) {
+            if (x_pos + new_symbol_width < new_width - left_margin)
+            {
                 cv::Rect dstRect(x_pos, y_pos, new_symbol_width, new_symbol_height);
-                if (!g.is_space) {
+                if (!g.is_space)
+                {
                     dst.copyTo(new_image(dstRect));
                 }
-            } else {
+            }
+            else
+            {
                 int scaled_symbol_width = (new_width - left_margin) - x_pos;
-                if (scaled_symbol_width > 0) {
+                if (scaled_symbol_width > 0)
+                {
 
                     // calucalte new symbol height
 
@@ -210,7 +243,8 @@ cv::Mat Reflow::reflow(float scale, int page_width, float margin) {
                     cv::Mat dst(scaled_symbol_height, scaled_symbol_width, symbol_mat.type());
                     cv::resize(symbol_mat, dst, dst.size(), 0,0, cv::INTER_CUBIC);
                     cv::Rect dstRect(x_pos, y_pos, scaled_symbol_width, scaled_symbol_height);
-                    if (!g.is_space) {
+                    if (!g.is_space)
+                    {
                         dst.copyTo(new_image(dstRect));
                     }
                 }

@@ -1,32 +1,25 @@
+# Improved page segementation
+## segm module is implemented in C++
+
+
 ```python
-from segm import find_glyphs
-import cv2
+from segm import join_rects
 import matplotlib.pyplot as plt
-```
+import cv2
 
+def segment_image(filename):
+    img = cv2.imread(filename, 0)
+    orig = cv2.imread(filename)
+    jr = join_rects(img)
+    for i, r in enumerate(jr):
+        cv2.rectangle(orig,(r.x,r.y),(r.x + r.width,r.y + r.height),(0,255,0),2)
 
-```python
-def segment_image(image_path):
-    img = cv2.imread(image_path)
-    g = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    _, new_g  = cv2.threshold(g, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
-    s = find_glyphs(new_g)
-    return s, img
+    return orig
+    
+filename = 'libsegm/vd_p122.png'
 
+img = segment_image(filename)
 
-def draw_glyphs(s, img):
-    img = img.copy()
-    for gl in s:
-        cv2.rectangle(img,(gl.x,gl.y),(gl.x + gl.width,gl.y + gl.height),(0,255,0),2)
-    return img
-
-
-segments, img = segment_image('preface.png')
-img = draw_glyphs(segments, img)
-```
-
-
-```python
 plt.rcParams['figure.figsize'] = [20, 20]
 plt.imshow(img)
 ```
@@ -34,13 +27,13 @@ plt.imshow(img)
 
 
 
-    <matplotlib.image.AxesImage at 0x13ba25fd0>
+    <matplotlib.image.AxesImage at 0x7feb138f58b0>
 
 
 
 
     
-![png](output_2_1.png)
+![png](output_1_1.png)
     
 
 
