@@ -1,4 +1,5 @@
 build/
 .skbuild/
 dist/
-
+.python-version
+segm/__pycache__
