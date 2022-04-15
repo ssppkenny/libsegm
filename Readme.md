@@ -17,6 +17,13 @@
 * Those components are text lines
 * Sort lines and symbols inside them
 
+### Python extension build instructions
+
+* pip install skbuild
+* install cmake, opencv, boost, flann, leptonica, lz4 (linux with apt, macos with brew)
+* run python setup.py build
+* if no errors, python setup.py install
+
 ```python
 from segm import join_rects
 import matplotlib.pyplot as plt
