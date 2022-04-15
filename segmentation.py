@@ -1,16 +1,17 @@
-from pyflann import *
-import numpy as np
-import cv2
-import networkx as nx
-import intervaltree
 from collections import defaultdict
 
+import cv2
+import intervaltree
+import networkx as nx
+import numpy as np
+from pyflann import *
 
 from segm import join_rects
 
+
 def all_pairs(s):
     lst = list(s)
-    return [(a, b) for idx, a in enumerate(lst) for b in lst[idx + 1:]]
+    return [(a, b) for idx, a in enumerate(lst) for b in lst[idx + 1 :]]
 
 
 def join_intervals(rngs):
@@ -33,8 +34,8 @@ def join_intervals(rngs):
             intersecting.add(r)
         else:
             del queue[r]
-            for a,b in all_pairs(intersecting):
-                g.add_edge(a[2],b[2])
+            for a, b in all_pairs(intersecting):
+                g.add_edge(a[2], b[2])
             if len(queue) == 0:
                 intersecting = set()
 
@@ -42,10 +43,10 @@ def join_intervals(rngs):
 
     new_rngs = []
     for c in cc:
-        min1 = float('inf')
+        min1 = float("inf")
         max1 = 0
         for i in c:
-            mn =rngs[i][0]
+            mn = rngs[i][0]
             mx = rngs[i][1]
             if mn < min1:
                 min1 = mn
@@ -53,7 +54,7 @@ def join_intervals(rngs):
                 max1 = mx
         new_rngs.append((min1, max1))
 
-    return  new_rngs
+    return new_rngs
 
 
 def find_neighbors(jr, nearest_neighbors):
@@ -95,11 +96,8 @@ def find_ordered_glyphs(filename):
     for i, r in enumerate(jr):
         centroids[i, :] = np.array([r.x + r.width / 2, r.y + r.height / 2])
     flann = FLANN()
-    params = flann.build_index(centroids,
-                               algorithm='kdtree',
-                               trees=4
-                               )
-    nearest_neighbors, dists = flann.nn_index(centroids, 20, checks=params['checks'])
+    params = flann.build_index(centroids, algorithm="kdtree", trees=4)
+    nearest_neighbors, dists = flann.nn_index(centroids, 20, checks=params["checks"])
     neighbors = find_neighbors(jr, nearest_neighbors)
     g = nx.Graph()
     for k, v in neighbors.items():
@@ -131,42 +129,24 @@ def find_ordered_glyphs(filename):
     for k, v in lines.items():
         new_lines[k] = sorted(v, key=lambda x: x.x)
 
-    t = [v for k,v in new_lines.items()]
+    t = [v for k, v in new_lines.items()]
     flat_list = [item for sublist in t for item in sublist]
     return flat_list
 
 
-
-if __name__ == '__main__':
-    filename = 'vd_p108.png'
+if __name__ == "__main__":
+    filename = "vd_p108.png"
     orig = cv2.imread(filename)
     glyphs = find_ordered_glyphs(filename)
     counter = 1
     font = cv2.FONT_HERSHEY_SIMPLEX
     for gl in glyphs:
-        cv2.rectangle(orig, (gl.x, gl.y), (gl.x + gl.width, gl.y + gl.height), (255,0,0), 2)
-        cv2.putText(orig, str(counter), (gl.x, gl.y), font, 1, (255,0,0), 2, cv2.LINE_AA)
+        cv2.rectangle(
+            orig, (gl.x, gl.y), (gl.x + gl.width, gl.y + gl.height), (255, 0, 0), 2
+        )
+        cv2.putText(
+            orig, str(counter), (gl.x, gl.y), font, 1, (255, 0, 0), 2, cv2.LINE_AA
+        )
         counter += 1
 
-    cv2.imwrite('test1.png', orig)
-
-
-
-
-
-
-    # orig = cv2.imread(filename)
-    # h, w, c = orig.shape
-    # for s,e in rngs:
-    #     cv2.line(orig, (0,s), (w,s), (255,0,0), 2)
-    #     cv2.line(orig, (0,e), (w,e), (255,0,0), 2)
-    #
-    # cv2.imwrite('test.png', orig)
-
-
-
-
-
-
-
-
+    cv2.imwrite("test1.png", orig)

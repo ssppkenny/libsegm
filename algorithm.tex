@@ -25,7 +25,7 @@ A scanned page is translated into an array of pixel intesities. For the reflowed
 \item Make a histogram of rectangle heights.
 \item The height with the highest frequency is the text height.
 \item Mark or remove all components with the hight or width \textless than $ 5 \times $ most frequent text hight.
-\item For every rectangle find a neighboring one to the right, it is a nearest rectangle  intersecting or being inside of the interval of heights [y, y + height], where y is the coordinate of the component's left corner.
+\item For every rectangle find a neighboring one to the right, it is a nearest rectangle  intersecting or being inside of the interval of heights [y, y + height], where y is the ordinate coordinate of the component's left upper corner.
 \item Create a graph, add an edge between all components and their immediate right neighbors.
 \item Find connected components in that graph.
 \item Join intersecting ones.
