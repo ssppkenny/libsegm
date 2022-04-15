@@ -54,7 +54,7 @@ plt.imshow(img)
     import cv2
     from segmentation import find_ordered_glyphs
     
-    filename = 'vd_p108.png'
+    filename = 'vd_p214.png'
     orig = cv2.imread(filename)
     glyphs = find_ordered_glyphs(filename)
     counter = 1
