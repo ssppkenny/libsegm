@@ -42,6 +42,9 @@ plt.imshow(img)
     
 ![png](output_1_1.png)
 
+```python
+    
+    import cv2
     from segmentation import find_ordered_glyphs
     
     filename = 'vd_p108.png'
@@ -55,7 +58,6 @@ plt.imshow(img)
         counter += 1
 
 
-```python
 
 ```
 ![png](segmented.png)

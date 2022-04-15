@@ -82,7 +82,7 @@ def find_neighbors(jr, nearest_neighbors):
     return ret_val
 
 
-def find_lines(filename):
+def find_ordered_glyphs(filename):
     """
     finds all rectangles
     :param filename: image filename
@@ -140,7 +140,7 @@ def find_lines(filename):
 if __name__ == '__main__':
     filename = 'vd_p108.png'
     orig = cv2.imread(filename)
-    glyphs = find_lines(filename)
+    glyphs = find_ordered_glyphs(filename)
     counter = 1
     font = cv2.FONT_HERSHEY_SIMPLEX
     for gl in glyphs:
