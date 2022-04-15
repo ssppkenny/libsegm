@@ -76,6 +76,7 @@ private:
     std::map<double_pair,cv::Rect> rd;
     Graph g;
     int line_height = 0;
+    std::vector<cv::Rect> pictures;
     std::vector<line_limit> get_line_limits();
     std::map<int,int> calculate_left_indents(std::vector<int> lefts);
     cc_result get_cc_results();

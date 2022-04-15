@@ -5,7 +5,7 @@
 #include "common.h"
 #include "Enclosure.h"
 #include "PageSegmenter.h"
-
+#include "RectJoin.h"
 
 
 line_limit PageSegmenter::find_baselines(vector<double_pair> &cc)
@@ -275,7 +275,7 @@ cc_result PageSegmenter::get_cc_results()
 
     Mat image;
     const Mat kernel = getStructuringElement(MORPH_RECT, Size(1, 1));
-    dilate(mat, image, kernel, Point(-1, -1), 1);
+    //dilate(mat, image, kernel, Point(-1, -1), 1);
 
 
     Mat labeled(mat.size(), mat.type());
@@ -291,6 +291,8 @@ cc_result PageSegmenter::get_cc_results()
     vector<double_pair> center_list;
     vector<Rect> rects;
     vector<int> v_heights;
+    int min_height = INT_MAX;
+    int max_height = 0;
 
     for (int i = 1; i < rectComponents.rows; i++)
     {
@@ -306,8 +308,51 @@ cc_result PageSegmenter::get_cc_results()
         rects.push_back(rectangle);
         v_heights.push_back(h);
         heights[i-1] = h;
+        if (h > max_height) {
+            max_height = h;
+        }
+        if (h < min_height) {
+            min_height = h;
+        }
         //}
     }
+
+    std::pair<std::vector<int>, std::vector<float>> h_hist = make_hist(v_heights, 50, min_height, max_height);
+
+
+    std::vector<int> freqs = h_hist.first;
+    std::vector<float> height_limits = h_hist.second;
+
+    std::vector<int>::iterator max_height_iter = std::max_element(freqs.begin(), freqs.end()); // [2, 4)
+    int argmaxVal = std::distance(freqs.begin(), max_height_iter);
+    
+    int most_freq_height = height_limits[argmaxVal];
+
+  
+    int pos = freqs.size()-1;
+    for (int i=freqs.size()-1; i>=0; i--) {
+        int f = freqs[i];
+        int h = height_limits[i];
+        if (f > 0 && h > 5*most_freq_height) {
+           pos = i;         
+        } 
+    }
+    
+    int cut = height_limits[pos];
+
+    std::vector<cv::Rect> filtered_rects;
+    std::vector<cv::Rect> pictures;
+    for (int i=0;i<rects.size(); i++) {
+        cv::Rect rect = rects[i];
+        if (rect.height < cut) {
+            filtered_rects.push_back(rect);
+        } else {
+           mat(rect).setTo(0);
+           this->pictures.push_back(rect); 
+        }
+    }
+
+    rects = join_rects(filtered_rects);
 
     if (count == 0)
     {
@@ -515,7 +560,7 @@ std::vector<glyph> PageSegmenter::get_glyphs()
 {
 
     vector<glyph> return_value;
-    std::vector<cv::Rect> big_rects;
+    //std::vector<cv::Rect> big_rects;
     vector<line_limit> line_limits = get_line_limits();
 
     line_limits = join_lines(line_limits);
@@ -669,6 +714,18 @@ std::vector<glyph> PageSegmenter::get_glyphs()
     }
 
     //mat.release();
+    //
+    for (cv::Rect pic_rect : this->pictures) {
+            int y = pic_rect.y - pic_rect.height;
+            auto it = std::find_if(return_value.begin(), return_value.end(), [y] (const glyph& gl) {return gl.y - gl.height > y;} );
+            glyph g;
+            g.x = pic_rect.x;
+            g.y = pic_rect.y;
+            g.width = pic_rect.width;
+            g.height = pic_rect.height;
+            g.is_picture = true;
+            return_value.insert(it, g);
+    }
 
     return return_value;
 

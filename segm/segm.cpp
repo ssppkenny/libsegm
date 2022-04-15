@@ -134,7 +134,7 @@ static PyObject* get_glyphs(PyObject* self, PyObject *args)
     {
         cv::Mat mat = cv::Mat(cv::Size(dims[1], dims[0]), CV_8UC1, PyArray_DATA(contig));
         //cv::bitwise_not(mat, mat);
-        //cv::threshold(c, c, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+        cv::threshold(mat, mat, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
         PageSegmenter ps(mat);
         glyphs = ps.get_glyphs();
         //cv::imwrite("test.jpg", c);
