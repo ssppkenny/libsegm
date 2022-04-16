@@ -20,6 +20,3 @@ segments, img = segment_image('preface.png')
 img = draw_glyphs(segments, img)
 
 cv2.imwrite('segments.png', img)
-
-
-    
