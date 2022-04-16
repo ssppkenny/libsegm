@@ -3,9 +3,7 @@ from collections import defaultdict
 import cv2
 import intervaltree
 import networkx as nx
-import numpy as np
 from pyflann import *
-
 from segm import join_rects
 
 
@@ -83,6 +81,42 @@ def find_neighbors(jr, nearest_neighbors):
     return ret_val
 
 
+def group_glyphs(glyphs):
+    numbered_glyphs = defaultdict(list)
+    for i, g in enumerate(glyphs):
+        numbered_glyphs[(g.x, g.x + g.width)].append(i)
+    t = intervaltree.IntervalTree()
+    d = dict([(i, (c.x, c.x + c.width, i)) for i, c in enumerate(glyphs)])
+    intervals = list(d.values())
+    for intr in intervals:
+        t.add(intervaltree.Interval(intr[0], intr[1]))
+    glyph_limits = join_intervals(intervals)
+    new_rects = []
+    for gl in glyph_limits:
+        x = t.overlap(gl[0], gl[1])
+        all_inds = set()
+        for intr in x:
+            inds = numbered_glyphs[(intr.begin, intr.end)]
+            all_inds.update(inds)
+        minx = float("inf")
+        maxx = 0
+        miny = float("inf")
+        maxy = 0
+        for ind in all_inds:
+            g = glyphs[ind]
+            if g.x < minx:
+                minx = g.x
+            if g.x + g.width > maxx:
+                maxx = g.x + g.width
+            if g.y < miny:
+                miny = g.y
+            if g.y + g.height > maxy:
+                maxy = g.y + g.height
+        new_rects.append((minx, maxx - minx, miny, maxy - miny))
+
+    return new_rects
+
+
 def find_ordered_glyphs(filename):
     """
     finds all rectangles
@@ -127,7 +161,8 @@ def find_ordered_glyphs(filename):
     lines = dict(sorted(lines.items(), key=lambda x: x[0].begin))
     new_lines = dict()
     for k, v in lines.items():
-        new_lines[k] = sorted(v, key=lambda x: x.x)
+        grouped_glyphs = group_glyphs(v)
+        new_lines[k] = sorted(grouped_glyphs, key=lambda x: x[0])
 
     t = [v for k, v in new_lines.items()]
     flat_list = [item for sublist in t for item in sublist]
@@ -135,18 +170,18 @@ def find_ordered_glyphs(filename):
 
 
 if __name__ == "__main__":
-    filename = "vd_p108.png"
+    filename = "vd_p214.png"
     orig = cv2.imread(filename)
     glyphs = find_ordered_glyphs(filename)
     counter = 1
     font = cv2.FONT_HERSHEY_SIMPLEX
     for gl in glyphs:
         cv2.rectangle(
-            orig, (gl.x, gl.y), (gl.x + gl.width, gl.y + gl.height), (255, 0, 0), 2
+            orig, (gl[0], gl[2]), (gl[0] + gl[1], gl[2] + gl[3]), (255, 0, 0), 2
         )
         cv2.putText(
-            orig, str(counter), (gl.x, gl.y), font, 1, (255, 0, 0), 2, cv2.LINE_AA
+            orig, str(counter), (gl[0], gl[2]), font, 1, (255, 0, 0), 2, cv2.LINE_AA
         )
         counter += 1
 
-    cv2.imwrite("test1.png", orig)
+    cv2.imwrite("segmented.png", orig)
