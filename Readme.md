@@ -16,7 +16,7 @@
 * Join intersecting components
 * Those components are text lines
 * Sort lines and symbols inside them
-* Calculate the average area of the connected pixel components for every text line, let us call it $`H_a`$. All the intersymbol gaps bigger than ```math $`\frac{1}{2} \times H_a`$ will be the interword gaps. Use the interword gaps to split the text line into words.
+* Calculate the average area of the connected pixel components for every text line, let us call it <img src="https://render.githubusercontent.com/render/math?math=H_a"> . All the intersymbol gaps bigger than <img src="https://render.githubusercontent.com/render/math?math=\frac{1}{2} \times H_a"> will be the interword gaps. Use the interword gaps to split the text line into words.
 * alculate the baseline height for every text line using the histogram of lower y coordinates. The most often occurring height is the baseline. Calculate the baseline shift for every symbol.
 
 
