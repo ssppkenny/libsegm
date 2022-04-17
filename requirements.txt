@@ -8,5 +8,4 @@ packaging==21.3
 pyflann3==1.8.4.1
 pyparsing==3.0.8
 scikit-build==0.14.1
-segm==0.1
 sortedcontainers==2.4.0
