@@ -1,5 +1,6 @@
 \documentclass{article}
 \usepackage{multicol}
+\usepackage{graphicx}
 \title{Page Segmentation Algorithm}
 \author{Sergey Mikhno}
 \date{April 2022}
@@ -33,10 +34,18 @@ A scanned page is translated into an array of pixel intesities. For the reflowed
 \item Sort the text lines and symbols inside them.
 \item Calculate the average area of the connected pixel components for every text line, let us call it $H_a$. All the intersymbol gaps bigger than $\frac{1}{2} \times H_a$ will be the interword gaps. Use the interword gaps to split the text line into words.
 \item Calculate the baseline height for every text line using the histogram of lower y coordinates. The most often occurring height is the baseline. Calculate the baseline shift for every symbol.
+
 \end{enumerate}
+
 
 \end{multicols}
 	
+
+\begin{figure}
+\includegraphics[width=\textwidth]{baseline.png}
+\label{fig:baseline}
+\caption{Baseline detection}
+\end{figure}
 
 	
 \end{document}
