@@ -3,4 +3,5 @@ build/
 _skbuild/
 dist/
 .python-version
-segm/__pycache__
+segm/__pycache__/
+tests/__pycache__/

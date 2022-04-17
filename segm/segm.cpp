@@ -61,18 +61,38 @@ static PyObject* get_joined_rects(PyObject* self, PyObject *args)
         connectedComponentsWithStats(mat, labeled, rectComponents, centComponents);
         int count = rectComponents.rows - 1;
 
+        std::vector<int> areas;
+        double sum_of_areas = 0.0;
+
         for (int i = 1; i < rectComponents.rows; i++)
         {
             int x = rectComponents.at<int>(Point(0, i));
             int y = rectComponents.at<int>(Point(1, i));
             int w = rectComponents.at<int>(Point(2, i));
             int h = rectComponents.at<int>(Point(3, i));
+            int area = rectComponents.at<int>(Point(4, i));
 
             Rect rectangle(x, y, w, h);
             rects.push_back(rectangle);
+            areas.push_back(area);
+            sum_of_areas += area;
         }
 
-        joined_rects = join_rects(rects);
+        double avg_area = sum_of_areas / count;
+
+        std::vector<cv::Rect> filtered_rects;
+        for (int i = 0; i<rects.size(); i++) 
+        {
+            cv::Rect r = rects[i];
+            int area = areas[i];
+            if (area < avg_area / 10) {
+                continue;
+            } else {
+                filtered_rects.push_back(r);
+            }
+        }
+
+        joined_rects = join_rects(filtered_rects);
         Enclosure enc(joined_rects);
         enclosing_rects = enc.solve();
 
