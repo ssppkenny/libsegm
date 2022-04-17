@@ -19,8 +19,8 @@
 
 ### Python extension build instructions
 
-* pip install skbuild
 * install cmake, opencv, boost, flann, leptonica, lz4 (linux with apt, macos with brew)
+* pip install skbuild, opencv-python, pyflann
 * run python setup.py build
 * if no errors, python setup.py install
 
