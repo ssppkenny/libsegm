@@ -72,6 +72,6 @@ endif()
 target_link_directories(_segm PUBLIC ${Python_LIBRARY_DIRS} ${Flann_LIBRARY_DIRS} ${Leptonica_LIBRARY_DIRS} ${Boost_LIBRARY_DIRS})
 
 target_include_directories(_segm PUBLIC ${PYTHON_INCLUDE_DIRS} ${Python3_NumPy_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${Leptonica_INCLUDE_DIRS})
-target_link_libraries(_segm ${Boost_LIBRARIES} ${Flann_LIBRARIES} ${OpenCV_LIBRARIES} ${Leptonica_LIBRARIES} ${Lz4_LIBRARIES} ${Gettext_LINK_LIBRARIES} -lintl )
+target_link_libraries(_segm ${Boost_LIBRARIES} ${Flann_LIBRARIES} ${OpenCV_LIBRARIES} ${Leptonica_LIBRARIES} ${Lz4_LIBRARIES} ${Gettext_LINK_LIBRARIES} )
 install(TARGETS _segm LIBRARY DESTINATION segm)
 
