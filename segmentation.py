@@ -57,7 +57,11 @@ def join_intervals(rngs):
         else:
             del queue[r]
             for a, b in all_pairs(intersecting):
-                g.add_edge(a[2], b[2])
+                left, right = max(a[0], b[0]), min(a[1], b[1])
+                if ((right - left) / (a[1] - a[0]) > 0.1) and (
+                    (right - left) / (b[1] - b[0]) > 0.1
+                ):
+                    g.add_edge(a[2], b[2])
             if len(queue) == 0:
                 intersecting = set()
 
@@ -97,8 +101,9 @@ def find_neighbors(jr, nearest_neighbors):
             c, d = (nb.y, nb.y + nb.height)
             left, right = max(a, c), min(b, d)
             if left < right and nb.x > r.x:
-                right_nbs.append((nb, i))
-            right_nbs = sorted(right_nbs, key=lambda x: x[0].x)
+                right_nbs.append((nb, i, (right - left) / nb.height))
+        right_nbs = sorted(right_nbs, key=lambda x: x[0].x / x[2])
+        # right_nbs = sorted(right_nbs, key=lambda x: x[0].x)
         if len(right_nbs) > 0:
             ret_val[j] = right_nbs[0]
 
@@ -253,7 +258,7 @@ def bounding_rects_for_words(words):
 
 
 if __name__ == "__main__":
-    filename = "vd_p214.png"
+    filename = "funcan_p15.png"
     orig = cv2.imread(filename)
     h, w, _ = orig.shape
     glyphs, baselines, lines_of_words = find_ordered_glyphs(filename)
