@@ -1,5 +1,6 @@
 import copy
 from collections import defaultdict
+from typing import Tuple, List, Dict, Set, Any
 
 import cv2
 import intervaltree
@@ -17,26 +18,28 @@ class Glyph:
         self.height = gr.height
 
     @staticmethod
-    def from_glyph_results(glyph_results, baseline):
+    def from_glyph_results(
+        glyph_results: List[glyph_result], baseline: float
+    ) -> List["Glyph"]:
         return [Glyph(gr, baseline) for gr in glyph_results]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"x = {self.x}, y = {self.y}, width = {self.width}, height = {self.height}, shift = {self.baseline_shift}"
 
 
-def find_baseline(glyphs):
+def find_baseline(glyphs: List[glyph_result]) -> float:
     lowers = [g.y + g.height for g in glyphs]
     hist, bin_edges = np.histogram(lowers, bins=50)
     maxind = np.argmax(hist)
     return bin_edges[maxind]
 
 
-def all_pairs(s):
+def all_pairs(s: Set[Any]) -> List[Tuple[Any, Any]]:
     lst = list(s)
     return [(a, b) for idx, a in enumerate(lst) for b in lst[idx + 1 :]]
 
 
-def join_intervals(rngs):
+def join_intervals(rngs: List[Tuple[int, int, int]]) -> List[Tuple[int, int]]:
     """
     join overlapping intervals
     :param rngs: list of intervals
@@ -83,7 +86,9 @@ def join_intervals(rngs):
     return new_rngs
 
 
-def find_neighbors(jr, nearest_neighbors):
+def find_neighbors(
+    jr: List[glyph_result], nearest_neighbors: np.ndarray
+) -> Dict[int, Tuple[glyph_result, int, float]]:
     """
     :param jr:
     :param nearest_neighbors:
@@ -110,7 +115,9 @@ def find_neighbors(jr, nearest_neighbors):
     return ret_val
 
 
-def word_limits(interword_gaps, glyphs):
+def word_limits(
+    interword_gaps: Dict[int, int], glyphs: List[glyph_result]
+) -> List[List[glyph_result]]:
     glyphs = copy.copy(glyphs)
     arr = list(interword_gaps.keys())
     words = []
@@ -132,7 +139,7 @@ def word_limits(interword_gaps, glyphs):
     return words
 
 
-def group_words(glyphs):
+def group_words(glyphs: List[glyph_result]) -> Dict[int, int]:
     av_height = np.mean([g.height for g in glyphs])
     gaps = []
     interword_gaps = dict()
@@ -146,7 +153,7 @@ def group_words(glyphs):
     return interword_gaps
 
 
-def group_glyphs(glyphs):
+def group_glyphs(glyphs: List[glyph_result]) -> List[glyph_result]:
     numbered_glyphs = defaultdict(list)
     for i, g in enumerate(glyphs):
         numbered_glyphs[(g.x, g.x + g.width)].append(i)
@@ -169,7 +176,9 @@ def group_glyphs(glyphs):
     return new_rects
 
 
-def bounding_rect(all_inds, glyphs):
+def bounding_rect(
+    all_inds: Set[int], glyphs: List[glyph_result]
+) -> Tuple[int, int, int, int]:
     minx = float("inf")
     maxx = 0
     miny = float("inf")
@@ -187,7 +196,9 @@ def bounding_rect(all_inds, glyphs):
     return maxx, maxy, minx, miny
 
 
-def find_ordered_glyphs(filename):
+def find_ordered_glyphs(
+    filename: str,
+) -> Tuple[List[glyph_result], List[float], List[List[List[Glyph]]]]:
     """
     finds all rectangles
     :param filename: image filename
@@ -249,7 +260,7 @@ def find_ordered_glyphs(filename):
     return flat_list, baselines, lines_of_words
 
 
-def bounding_rects_for_words(words):
+def bounding_rects_for_words(words: List[List[Glyph]]) -> List[glyph_result]:
     new_rects = []
     for w in words:
         maxx, maxy, minx, miny = bounding_rect(range(len(w)), w)
