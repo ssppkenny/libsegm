@@ -16,13 +16,15 @@
 * Join intersecting components
 * Those components are text lines
 * Sort lines and symbols inside them
+* Calculate the average area of the connected pixel components for every text line, let us call it <img src="https://render.githubusercontent.com/render/math?math=H_a"> . All the intersymbol gaps bigger than <img src="https://render.githubusercontent.com/render/math?math=\frac{1}{2} \times H_a"> will be the interword gaps. Use the interword gaps to split the text line into words.
+* alculate the baseline height for every text line using the histogram of lower y coordinates. The most often occurring height is the baseline. Calculate the baseline shift for every symbol.
+
 
 ### Python extension build instructions
 
-* install cmake, opencv, boost, flann, leptonica, lz4 (linux with apt, macos with brew)
-* pip install skbuild, opencv-python, pyflann
-* run python setup.py build
-* if no errors, python setup.py install
+* sudo apt install libboost-dev libleptonica-dev libflann-dev libopencv-dev liblz4-dev cmake
+* pip install requirements.txt
+* run python setup.py install
 
 ```python
 from segm import join_rects
