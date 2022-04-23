@@ -1,4 +1,4 @@
-from segm import join_rects
+from segm import join_rects, join_intervals
 import cv2
 
 
