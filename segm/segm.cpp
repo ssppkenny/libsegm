@@ -10,6 +10,7 @@
 #include "PageSegmenter.h"
 #include "Enclosure.h"
 #include "RectJoin.h"
+#include "IntervalJoin.h"
 
 static PyTypeObject GlyphResultType = {0, 0, 0, 0, 0, 0};
 
@@ -30,6 +31,39 @@ static PyStructSequence_Desc glyph_result_desc =
     4
 };
 
+static PyObject* get_joined_intervals(PyObject* self, PyObject *args) {
+    PyObject *list;
+
+    PyArg_ParseTuple(args, "O!", &PyList_Type, &list);
+
+    int size = PyList_Size(list);
+
+    std::vector<std::tuple<int,int,int>> rngs;
+
+    for (int i = 0; i<size; i++) {
+        PyObject* obj = PyList_GetItem(list, i);
+        long a = PyInt_AsLong(PyTuple_GET_ITEM(obj, 0));
+        long b = PyInt_AsLong(PyTuple_GET_ITEM(obj, 1));
+        long c = PyInt_AsLong(PyTuple_GET_ITEM(obj, 2));
+        rngs.push_back(std::make_tuple(a,b,c));
+    }
+
+    std::vector<interval<int>> intervals = join_intervals(rngs);
+
+    PyObject* ret_val = PyList_New(intervals.size());
+
+    for (int i=0; i<intervals.size(); i++) {
+        PyObject* t = PyTuple_New(2);
+        PyTuple_SetItem(t, 0, PyLong_FromLong(intervals[i].low()));
+        PyTuple_SetItem(t, 1, PyLong_FromLong(intervals[i].high()));
+        PyList_SetItem(ret_val, i, t);
+    }
+
+
+
+    return ret_val;
+    
+}
 static PyObject* get_joined_rects(PyObject* self, PyObject *args)
 {
     PyObject *input;
@@ -202,6 +236,7 @@ static PyMethodDef method_table[] =
 {
     {"get_glyphs", (PyCFunction) get_glyphs, METH_VARARGS, "get_glyphs finds all glyphs (letters) in an image"},
     {"get_joined_rects", (PyCFunction) get_joined_rects, METH_VARARGS, "get_joined_rects finds all interecting rectangles and joines them, returns joined rectangles"},
+    {"get_joined_intervals", (PyCFunction) get_joined_intervals, METH_VARARGS, "get_joined_intervals finds all interecting intervals and joines them, returns joined intervals"},
     {NULL, NULL, 0, NULL} // Sentinel value ending the table
 };
 

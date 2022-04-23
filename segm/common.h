@@ -107,5 +107,19 @@ int strlen16(char16_t* strarg);
 
 std::vector<glyph> get_glyphs(cv::Mat mat);
 
+template<typename T>
+std::vector<std::pair<T, T>> all_pairs(
+    std::vector<T> intervals) {
+    int size = intervals.size();
+    std::vector<std::pair<T, T>> return_value;
+    for (int i = 0; i < size; i++) {
+        for (int j = i + 1; j < size; j++) {
+            return_value.push_back(
+                std::make_pair(intervals.at(i), intervals.at(j)));
+        }
+    }
+    return return_value;
+}
+
 
 #endif

@@ -6,7 +6,7 @@ import cv2
 import intervaltree
 import networkx as nx
 from pyflann import *
-from segm import join_rects, glyph_result
+from segm import join_rects, glyph_result, join_intervals
 
 
 class Glyph:
@@ -37,53 +37,6 @@ def find_baseline(glyphs: List[glyph_result]) -> float:
 def all_pairs(s: Set[Any]) -> List[Tuple[Any, Any]]:
     lst = list(s)
     return [(a, b) for idx, a in enumerate(lst) for b in lst[idx + 1 :]]
-
-
-def join_intervals(rngs: List[Tuple[int, int, int]]) -> List[Tuple[int, int]]:
-    """
-    join overlapping intervals
-    :param rngs: list of intervals
-    :return: joined not overlapping intervals
-    """
-    left_events = [(x[0], 0, x, x[2]) for x in rngs]
-    right_events = [(x[1], 1, x, x[2]) for x in rngs]
-    sorted_events = sorted(left_events + right_events)
-    queue = dict()
-    intersecting = set()
-    g = nx.Graph()
-    for i in range(len(rngs)):
-        g.add_node(i)
-    for x, t, r, i in sorted_events:
-        if t == 0:
-            queue[r] = i
-            intersecting.add(r)
-        else:
-            del queue[r]
-            for a, b in all_pairs(intersecting):
-                left, right = max(a[0], b[0]), min(a[1], b[1])
-                if ((right - left) / (a[1] - a[0]) > 0.1) and (
-                    (right - left) / (b[1] - b[0]) > 0.1
-                ):
-                    g.add_edge(a[2], b[2])
-            if len(queue) == 0:
-                intersecting = set()
-
-    cc = [x for x in nx.connected_components(g)]
-
-    new_rngs = []
-    for c in cc:
-        min1 = float("inf")
-        max1 = 0
-        for i in c:
-            mn = rngs[i][0]
-            mx = rngs[i][1]
-            if mn < min1:
-                min1 = mn
-            if mx > max1:
-                max1 = mx
-        new_rngs.append((min1, max1))
-
-    return new_rngs
 
 
 def find_neighbors(

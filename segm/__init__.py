@@ -8,3 +8,5 @@ def join_rects(img):
     return get_joined_rects(img, img.dtype)
 
 
+def join_intervals(intervals):
+    return get_joined_intervals(intervals)
