@@ -6,7 +6,8 @@ import cv2
 import intervaltree
 import networkx as nx
 from pyflann import *
-from segm import join_rects, glyph_result, join_intervals
+from segm import join_intervals, find_neighbors
+from segm import join_rects, glyph_result
 
 
 class Glyph:
@@ -37,35 +38,6 @@ def find_baseline(glyphs: List[glyph_result]) -> float:
 def all_pairs(s: Set[Any]) -> List[Tuple[Any, Any]]:
     lst = list(s)
     return [(a, b) for idx, a in enumerate(lst) for b in lst[idx + 1 :]]
-
-
-def find_neighbors(
-    jr: List[glyph_result], nearest_neighbors: np.ndarray
-) -> Dict[int, Tuple[glyph_result, int, float]]:
-    """
-    :param jr:
-    :param nearest_neighbors:
-    :return: a dict with key = index of the rectangle and value is index of its neighbor to the right
-    """
-    ret_val = dict([(i, None) for i, _ in enumerate(jr)])
-
-    for j in range(len(jr)):
-        r = jr[j]
-        nbs = nearest_neighbors[j, :]
-        right_nbs = []
-        for i in nbs[1:]:
-            nb = jr[i]
-            a, b = (r.y, r.y + r.height)
-            c, d = (nb.y, nb.y + nb.height)
-            left, right = max(a, c), min(b, d)
-            if left < right and nb.x > r.x:
-                right_nbs.append((nb, i, (right - left) / nb.height))
-        right_nbs = sorted(right_nbs, key=lambda x: x[0].x / x[2])
-        # right_nbs = sorted(right_nbs, key=lambda x: x[0].x)
-        if len(right_nbs) > 0:
-            ret_val[j] = right_nbs[0]
-
-    return ret_val
 
 
 def word_limits(
@@ -204,7 +176,6 @@ def find_ordered_glyphs(
         all_glyphs = sorted(grouped_glyphs, key=lambda x: x[0])
         interword_gaps = group_words(all_glyphs)
         words = word_limits(interword_gaps, all_glyphs)
-        ##aaa = [Glyph.from_glyph_results(word, lower) for word in words]
         lines_of_words.append([Glyph.from_glyph_results(word, lower) for word in words])
         new_lines[k] = all_glyphs
 
@@ -222,7 +193,7 @@ def bounding_rects_for_words(words: List[List[Glyph]]) -> List[glyph_result]:
 
 
 if __name__ == "__main__":
-    filename = "funcan_p15.png"
+    filename = "math21_1_23.png"
     orig = cv2.imread(filename)
     h, w, _ = orig.shape
     glyphs, baselines, lines_of_words = find_ordered_glyphs(filename)

@@ -10,3 +10,7 @@ def join_rects(img):
 
 def join_intervals(intervals):
     return get_joined_intervals(intervals)
+
+
+def find_neighbors(glyphs, nn):
+    return get_neighbors(glyphs, nn, nn.dtype)

@@ -11,6 +11,7 @@
 #include "Enclosure.h"
 #include "RectJoin.h"
 #include "IntervalJoin.h"
+#include "segmentation.h"
 
 static PyTypeObject GlyphResultType = {0, 0, 0, 0, 0, 0};
 
@@ -30,6 +31,88 @@ static PyStructSequence_Desc glyph_result_desc =
     glyph_result_fields,
     4
 };
+
+static PyObject* get_neighbors(PyObject* self, PyObject *args) {
+    
+    PyObject *lst;
+    PyObject *input;
+    PyArray_Descr *dtype = NULL;
+    if (!PyArg_ParseTuple(args, "OOO&", &lst, &input, PyArray_DescrConverter, &dtype))
+    {
+        return NULL;
+    }
+    int size = PyList_Size(lst);
+
+
+    std::vector<cv::Rect> rects;
+    for (int i = 0; i<size; i++) {
+        PyObject* item_object = PyList_GetItem(lst, i);
+        int x = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 0));
+        int y = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 1));
+        int w = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 2));
+        int h = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 3));
+
+        cv::Rect r(x,y,w,h);
+        rects.push_back(r);
+    }
+    
+
+    int nd = PyArray_NDIM(input);
+    npy_intp* dims = PyArray_DIMS(input);
+
+    PyArrayObject* contig = (PyArrayObject*)PyArray_FromAny(input,
+                            dtype,
+                            1, 3, NPY_ARRAY_CARRAY, NULL);
+
+    std::vector<std::vector<int>> nn;
+    for (int r = 0; r < dims[0]; r++) {
+        std::vector<int> v;
+        int* row = (int*)PyArray_GETPTR1(contig, r);
+        for (int c = 0; c < dims[1]; c++) {
+            //int val = mat.at<unsigned int>(r,c);
+            int val = row[c];
+            v.push_back(val);
+        }
+        nn.push_back(v);
+    }
+
+
+    std::map<int,std::tuple<cv::Rect,int,double>> nmap = find_neighbors(rects, nn);
+
+    PyObject *ret_val = PyDict_New();
+
+    for (auto it=nmap.begin(); it != nmap.end(); it++) {
+        auto k = it->first;
+        auto v = it->second;
+
+        cv::Rect r = std::get<0>(v);
+        int s = std::get<1>(v);
+        double d = std::get<2>(v);
+
+        PyObject* t = PyTuple_New(3);
+        
+        PyStructSequence* res = (PyStructSequence*) PyStructSequence_New(&GlyphResultType);
+        
+        PyStructSequence_SET_ITEM(res, 0, PyLong_FromLong(r.x));
+        PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(r.y));
+        PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(r.width));
+        PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(r.height));
+        
+        PyTuple_SetItem(t, 0, (PyObject*)res);
+
+        PyTuple_SetItem(t, 1, PyLong_FromLong(s));
+        PyTuple_SetItem(t, 2, PyFloat_FromDouble(d));
+
+        if (r.x == -1) {
+            PyDict_SetItem(ret_val, PyLong_FromLong(k), Py_None);
+        } else {
+            PyDict_SetItem(ret_val, PyLong_FromLong(k), t);
+        }
+    }
+
+    return ret_val;
+
+}
 
 static PyObject* get_joined_intervals(PyObject* self, PyObject *args) {
     PyObject *list;
@@ -237,6 +320,7 @@ static PyMethodDef method_table[] =
     {"get_glyphs", (PyCFunction) get_glyphs, METH_VARARGS, "get_glyphs finds all glyphs (letters) in an image"},
     {"get_joined_rects", (PyCFunction) get_joined_rects, METH_VARARGS, "get_joined_rects finds all interecting rectangles and joines them, returns joined rectangles"},
     {"get_joined_intervals", (PyCFunction) get_joined_intervals, METH_VARARGS, "get_joined_intervals finds all interecting intervals and joines them, returns joined intervals"},
+    {"get_neighbors", (PyCFunction) get_neighbors, METH_VARARGS, "get_neighbors finds all neigboring rectangles"},
     {NULL, NULL, 0, NULL} // Sentinel value ending the table
 };
 
