@@ -1,7 +1,7 @@
 from segm import join_rects, join_intervals, glyph_result, find_neighbors, find_baseline
 import cv2
 import numpy as np
-
+import pytest
 
 def test_find_baseline():
     r1 = glyph_result((0, 1, 2, 2))
