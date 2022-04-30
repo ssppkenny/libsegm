@@ -1,6 +1,18 @@
-from segm import join_rects, join_intervals, glyph_result, find_neighbors
+from segm import join_rects, join_intervals, glyph_result, find_neighbors, find_baseline
 import cv2
 import numpy as np
+
+
+def test_find_baseline():
+    r1 = glyph_result((0, 1, 2, 2))
+    r2 = glyph_result((3, 1, 2, 2))
+    r3 = glyph_result((5, 1, 2, 2))
+    r4 = glyph_result((7, 0, 2, 3))
+    r5 = glyph_result((9, 1, 2, 2))
+    r6 = glyph_result((11, 1, 2, 2))
+    r7 = glyph_result((13, 0, 2, 3))
+    bl = find_baseline([r1, r2, r3, r4, r5, r6, r7])
+    assert 3.0 == pytest.approx(bl, 0.1)
 
 
 def test_join():

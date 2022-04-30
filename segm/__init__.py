@@ -14,3 +14,19 @@ def join_intervals(intervals):
 
 def find_neighbors(glyphs, nn):
     return get_neighbors(glyphs, nn, nn.dtype)
+
+
+def find_interword_gaps(glyphs):
+    return get_interword_gaps(glyphs)
+
+
+def find_bounding_rect(inds, glyphs):
+    return get_bounding_rect(inds, glyphs)
+
+
+def find_word_limits(interword_gaps, glyphs):
+    return get_word_limits(interword_gaps, glyphs)
+
+
+def find_baseline(glyphs):
+    return get_baseline(glyphs)

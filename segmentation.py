@@ -1,11 +1,15 @@
-import copy
+import time
 from collections import defaultdict
-from typing import Tuple, List, Dict, Set, Any
+from typing import Tuple, List
 
 import cv2
 import intervaltree
 import networkx as nx
 from pyflann import *
+from segm import find_baseline
+from segm import find_bounding_rect as bounding_rect
+from segm import find_interword_gaps as group_words
+from segm import find_word_limits as word_limits
 from segm import join_intervals, find_neighbors
 from segm import join_rects, glyph_result
 
@@ -28,56 +32,6 @@ class Glyph:
         return f"x = {self.x}, y = {self.y}, width = {self.width}, height = {self.height}, shift = {self.baseline_shift}"
 
 
-def find_baseline(glyphs: List[glyph_result]) -> float:
-    lowers = [g.y + g.height for g in glyphs]
-    hist, bin_edges = np.histogram(lowers, bins=50)
-    maxind = np.argmax(hist)
-    return bin_edges[maxind]
-
-
-def all_pairs(s: Set[Any]) -> List[Tuple[Any, Any]]:
-    lst = list(s)
-    return [(a, b) for idx, a in enumerate(lst) for b in lst[idx + 1 :]]
-
-
-def word_limits(
-    interword_gaps: Dict[int, int], glyphs: List[glyph_result]
-) -> List[List[glyph_result]]:
-    glyphs = copy.copy(glyphs)
-    arr = list(interword_gaps.keys())
-    words = []
-    if len(arr) == 0:
-        words.append(copy.copy(glyphs[:]))
-        return words
-
-    limits = [arr[0]]
-    for i, el in enumerate(arr):
-        if i != len(arr) - 1:
-            limits.append(arr[i + 1] - el)
-        else:
-            limits.append(len(glyphs) - el)
-
-    for l in limits:
-        words.append(copy.copy(glyphs[:l]))
-        glyphs[:l] = []
-
-    return words
-
-
-def group_words(glyphs: List[glyph_result]) -> Dict[int, int]:
-    av_height = np.mean([g.height for g in glyphs])
-    gaps = []
-    interword_gaps = dict()
-    for i in range(1, len(glyphs)):
-        gc = glyphs[i]
-        gp = glyphs[i - 1]
-        gap = gc.x - (gp.x + gp.width)
-        gaps.append(gap)
-        if gap > 0.5 * av_height:
-            interword_gaps[i] = gap
-    return interword_gaps
-
-
 def group_glyphs(glyphs: List[glyph_result]) -> List[glyph_result]:
     numbered_glyphs = defaultdict(list)
     for i, g in enumerate(glyphs):
@@ -95,30 +49,10 @@ def group_glyphs(glyphs: List[glyph_result]) -> List[glyph_result]:
         for intr in x:
             inds = numbered_glyphs[(intr.begin, intr.end)]
             all_inds.update(inds)
-        maxx, maxy, minx, miny = bounding_rect(all_inds, glyphs)
-        new_rects.append(glyph_result((minx, miny, maxx - minx, maxy - miny)))
+        br = bounding_rect(list(all_inds), glyphs)
+        new_rects.append(br)
 
     return new_rects
-
-
-def bounding_rect(
-    all_inds: Set[int], glyphs: List[glyph_result]
-) -> Tuple[int, int, int, int]:
-    minx = float("inf")
-    maxx = 0
-    miny = float("inf")
-    maxy = 0
-    for ind in all_inds:
-        g = glyphs[ind]
-        if g.x < minx:
-            minx = g.x
-        if g.x + g.width > maxx:
-            maxx = g.x + g.width
-        if g.y < miny:
-            miny = g.y
-        if g.y + g.height > maxy:
-            maxy = g.y + g.height
-    return maxx, maxy, minx, miny
 
 
 def find_ordered_glyphs(
@@ -139,7 +73,9 @@ def find_ordered_glyphs(
     flann = FLANN()
     params = flann.build_index(centroids, algorithm="kdtree", trees=4)
     nearest_neighbors, dists = flann.nn_index(centroids, 20, checks=params["checks"])
+    t = time.perf_counter()
     neighbors = find_neighbors(jr, nearest_neighbors)
+    print(time.perf_counter() - t)
     g = nx.Graph()
     for k, v in neighbors.items():
         if v:
@@ -187,8 +123,11 @@ def find_ordered_glyphs(
 def bounding_rects_for_words(words: List[List[Glyph]]) -> List[glyph_result]:
     new_rects = []
     for w in words:
-        maxx, maxy, minx, miny = bounding_rect(range(len(w)), w)
-        new_rects.append(glyph_result((minx, miny, maxx - minx, maxy - miny)))
+        lst = list(range(len(w)))
+        br = bounding_rect(
+            lst, [glyph_result((g.x, g.y, g.width, g.height)) for g in w]
+        )
+        new_rects.append(br)
     return new_rects
 
 

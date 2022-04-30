@@ -32,6 +32,159 @@ static PyStructSequence_Desc glyph_result_desc =
     4
 };
 
+static PyObject* get_baseline(PyObject* self, PyObject *args) {
+    
+    PyObject *glyphs;
+    PyArg_ParseTuple(args, "O!", &PyList_Type, &glyphs);
+
+    std::vector<cv::Rect> rects;
+
+    int size = PyList_Size(glyphs);
+    for (int i = 0; i<size; i++) {
+        PyObject* item_object = PyList_GetItem(glyphs, i);
+        int x = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 0));
+        int y = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 1));
+        int w = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 2));
+        int h = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 3));
+
+        cv::Rect r(x,y,w,h);
+        rects.push_back(r);
+    }
+
+    double bl = baseline(rects);
+    return PyFloat_FromDouble(bl);
+
+}
+
+static PyObject* get_word_limits(PyObject* self, PyObject *args) {
+    PyObject *glyphs;
+    PyObject *interword_gaps;
+    PyArg_ParseTuple(args, "O!O!", &PyDict_Type, &interword_gaps, &PyList_Type, &glyphs);
+
+    std::map<int,int> m;
+    std::vector<cv::Rect> rects;
+
+    int size = PyList_Size(glyphs);
+    for (int i = 0; i<size; i++) {
+        PyObject* item_object = PyList_GetItem(glyphs, i);
+        int x = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 0));
+        int y = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 1));
+        int w = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 2));
+        int h = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 3));
+
+        cv::Rect r(x,y,w,h);
+        rects.push_back(r);
+    }
+
+    PyObject* dict_keys = PyDict_Keys(interword_gaps);
+    size = PyList_Size(dict_keys);
+    for (int i=0; i<size; i++) {
+
+        PyObject* item = PyList_GetItem(dict_keys, i);
+        int k = PyInt_AsLong(item);
+        int v = PyInt_AsLong(PyDict_GetItem(interword_gaps, item));
+        m[k] = v;
+    }
+
+    std::vector<std::vector<cv::Rect>> limits = word_limits(m, rects);
+
+    PyObject* list = PyList_New(limits.size());
+    for (int i = 0; i < limits.size(); i++)
+    {
+        std::vector<cv::Rect> word = limits[i];
+        PyObject* sublist = PyList_New(word.size());
+        for (int j=0; j<word.size(); j++) {
+
+            PyStructSequence* res = (PyStructSequence*) PyStructSequence_New(&GlyphResultType);
+            PyStructSequence_SET_ITEM(res, 0, PyLong_FromLong(word[j].x));
+            PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(word[j].y));
+            PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(word[j].width));
+            PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(word[j].height));
+            PyList_SetItem(sublist, j, (PyObject*)res);
+        }
+        PyList_SetItem(list, i, sublist);
+
+    }
+
+    return list;
+
+
+    
+}
+
+static PyObject* get_bounding_rect(PyObject* self, PyObject *args) {
+    
+    PyObject *glyphs;
+    PyObject *all_inds;
+    PyArg_ParseTuple(args, "O!O!", &PyList_Type, &all_inds, &PyList_Type, &glyphs);
+
+    std::vector<cv::Rect> rects;
+
+    int size = PyList_Size(glyphs);
+    for (int i = 0; i<size; i++) {
+        PyObject* item_object = PyList_GetItem(glyphs, i);
+        int x = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 0));
+        int y = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 1));
+        int w = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 2));
+        int h = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 3));
+
+        cv::Rect r(x,y,w,h);
+        rects.push_back(r);
+    }
+
+    size = PyList_Size(all_inds);
+    std::set<int> inds;
+    for (int i = 0; i<size; i++) {
+        PyObject* item_object = PyList_GetItem(all_inds, i);
+        int ind = PyInt_AsLong(item_object);
+        inds.insert(ind);
+    }
+
+    cv::Rect r = bounding_rect(inds, rects);
+
+    PyStructSequence* res = (PyStructSequence*) PyStructSequence_New(&GlyphResultType);
+    
+    PyStructSequence_SET_ITEM(res, 0, PyLong_FromLong(r.x));
+    PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(r.y));
+    PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(r.width));
+    PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(r.height));
+    
+    return (PyObject*)res;
+
+}
+
+static PyObject* get_interword_gaps(PyObject* self, PyObject *args) {
+    PyObject *list;
+
+    PyArg_ParseTuple(args, "O!", &PyList_Type, &list);
+
+    int size = PyList_Size(list);
+    std::vector<cv::Rect> rects;
+    
+    for (int i = 0; i<size; i++) {
+        PyObject* item_object = PyList_GetItem(list, i);
+        int x = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 0));
+        int y = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 1));
+        int w = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 2));
+        int h = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 3));
+
+        cv::Rect r(x,y,w,h);
+        rects.push_back(r);
+    }
+
+    std::map<int,int> interword_gaps = group_words(rects);
+
+    PyObject *ret_val = PyDict_New();
+    
+    for (auto it=interword_gaps.begin(); it != interword_gaps.end(); it++) {
+        int k = it->first;
+        int v = it->second;
+        
+        PyDict_SetItem(ret_val, PyLong_FromLong(k), PyLong_FromLong(v));
+    }
+
+    return ret_val;
+}
 static PyObject* get_neighbors(PyObject* self, PyObject *args) {
     
     PyObject *lst;
@@ -321,6 +474,10 @@ static PyMethodDef method_table[] =
     {"get_joined_rects", (PyCFunction) get_joined_rects, METH_VARARGS, "get_joined_rects finds all interecting rectangles and joines them, returns joined rectangles"},
     {"get_joined_intervals", (PyCFunction) get_joined_intervals, METH_VARARGS, "get_joined_intervals finds all interecting intervals and joines them, returns joined intervals"},
     {"get_neighbors", (PyCFunction) get_neighbors, METH_VARARGS, "get_neighbors finds all neigboring rectangles"},
+    {"get_interword_gaps", (PyCFunction) get_interword_gaps, METH_VARARGS, "get_interword_gaps finds interword gaps"},
+    {"get_bounding_rect", (PyCFunction) get_bounding_rect, METH_VARARGS, "get_bounding_rect for a list of rects"},
+    {"get_word_limits", (PyCFunction) get_word_limits, METH_VARARGS, "get_word_limits get list of words"},
+    {"get_baseline", (PyCFunction) get_baseline, METH_VARARGS, "gets baseline for a list of glyphs"},
     {NULL, NULL, 0, NULL} // Sentinel value ending the table
 };
 
