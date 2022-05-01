@@ -32,6 +32,82 @@ static PyStructSequence_Desc glyph_result_desc =
     4
 };
 
+static PyObject* get_bounding_rects_for_words(PyObject* self, PyObject *args) {
+
+    PyObject *words;
+    PyArg_ParseTuple(args, "O!", &PyList_Type, &words);
+
+    std::vector<std::vector<cv::Rect>> ws;
+
+    int size = PyList_Size(words);
+    for (int i=0; i<size; i++) {
+        PyObject* list_item = PyList_GetItem(words, i);
+        int ssize = PyList_Size(list_item);
+        std::vector<cv::Rect> word;
+        for (int j=0;j<ssize; j++) {
+            PyObject* item_object = PyList_GetItem(list_item, j);
+            int x = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 0));
+            int y = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 1));
+            int w = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 2));
+            int h = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 3));
+
+            cv::Rect r(x,y,w,h);
+            word.push_back(r);
+        }
+        ws.push_back(word);
+    }
+
+    std::vector<cv::Rect> new_rects = bounding_rects_for_words(ws);
+
+    PyObject* list = PyList_New(new_rects.size());
+    for (int i = 0; i < new_rects.size(); i++)
+    {
+        PyStructSequence* res = (PyStructSequence*) PyStructSequence_New(&GlyphResultType);
+        PyStructSequence_SET_ITEM(res, 0, PyLong_FromLong(new_rects[i].x));
+        PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(new_rects[i].y));
+        PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(new_rects[i].width));
+        PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(new_rects[i].height));
+        PyList_SetItem(list, i, (PyObject*)res);
+    }
+
+    return list;
+}
+
+static PyObject* get_grouped_glyphs(PyObject* self, PyObject *args) {
+
+    PyObject *glyphs;
+    PyArg_ParseTuple(args, "O!", &PyList_Type, &glyphs);
+    
+    std::vector<cv::Rect> rects;
+
+    int size = PyList_Size(glyphs);
+    for (int i = 0; i<size; i++) {
+        PyObject* item_object = PyList_GetItem(glyphs, i);
+        int x = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 0));
+        int y = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 1));
+        int w = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 2));
+        int h = PyInt_AsLong(PyStructSequence_GET_ITEM(item_object, 3));
+
+        cv::Rect r(x,y,w,h);
+        rects.push_back(r);
+    }
+
+    std::vector<cv::Rect> new_rects = group_glyphs(rects);
+    PyObject* list = PyList_New(new_rects.size());
+    for (int i = 0; i < new_rects.size(); i++)
+    {
+        PyStructSequence* res = (PyStructSequence*) PyStructSequence_New(&GlyphResultType);
+        PyStructSequence_SET_ITEM(res, 0, PyLong_FromLong(new_rects[i].x));
+        PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(new_rects[i].y));
+        PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(new_rects[i].width));
+        PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(new_rects[i].height));
+        PyList_SetItem(list, i, (PyObject*)res);
+    }
+
+    return list;
+
+}
+
 static PyObject* get_baseline(PyObject* self, PyObject *args) {
     
     PyObject *glyphs;
@@ -478,6 +554,8 @@ static PyMethodDef method_table[] =
     {"get_bounding_rect", (PyCFunction) get_bounding_rect, METH_VARARGS, "get_bounding_rect for a list of rects"},
     {"get_word_limits", (PyCFunction) get_word_limits, METH_VARARGS, "get_word_limits get list of words"},
     {"get_baseline", (PyCFunction) get_baseline, METH_VARARGS, "gets baseline for a list of glyphs"},
+    {"get_grouped_glyphs", (PyCFunction) get_grouped_glyphs, METH_VARARGS, "gets grouped glyphs"},
+    {"get_bounding_rects_for_words", (PyCFunction) get_bounding_rects_for_words, METH_VARARGS, "gets bounding rects for words"},
     {NULL, NULL, 0, NULL} // Sentinel value ending the table
 };
 

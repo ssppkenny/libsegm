@@ -30,3 +30,11 @@ def find_word_limits(interword_gaps, glyphs):
 
 def find_baseline(glyphs):
     return get_baseline(glyphs)
+
+
+def find_grouped_glyphs(glyphs):
+    return get_grouped_glyphs(glyphs)
+
+
+def find_bounding_rects_for_words(words):
+    return get_bounding_rects_for_words(words)

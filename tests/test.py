@@ -1,7 +1,16 @@
-from segm import join_rects, join_intervals, glyph_result, find_neighbors, find_baseline
+from segm import join_rects, join_intervals, glyph_result, find_neighbors, find_baseline, find_grouped_glyphs as group_glyphs
 import cv2
 import numpy as np
 import pytest
+
+def test_group_glyphs():
+    r1 = glyph_result((0, 0, 2, 3))
+    r2 = glyph_result((1, 1, 2, 2))
+    r3 = glyph_result((5, 0, 2, 3))
+    r4 = glyph_result((6, 0, 2, 3))
+    a, b = group_glyphs([r1, r2, r3, r4])
+    assert a == glyph_result((0, 0, 3, 3))
+    assert b == glyph_result((5, 0, 3, 3))
 
 def test_find_baseline():
     r1 = glyph_result((0, 1, 2, 2))
