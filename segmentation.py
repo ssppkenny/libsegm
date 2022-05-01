@@ -7,7 +7,8 @@ import intervaltree
 import networkx as nx
 from pyflann import *
 from segm import find_baseline
-from segm import find_bounding_rect as bounding_rect
+from segm import find_bounding_rects_for_words as bounding_rects_for_words
+from segm import find_grouped_glyphs as group_glyphs
 from segm import find_interword_gaps as group_words
 from segm import find_word_limits as word_limits
 from segm import join_intervals, find_neighbors
@@ -30,29 +31,6 @@ class Glyph:
 
     def __str__(self) -> str:
         return f"x = {self.x}, y = {self.y}, width = {self.width}, height = {self.height}, shift = {self.baseline_shift}"
-
-
-def group_glyphs(glyphs: List[glyph_result]) -> List[glyph_result]:
-    numbered_glyphs = defaultdict(list)
-    for i, g in enumerate(glyphs):
-        numbered_glyphs[(g.x, g.x + g.width)].append(i)
-    t = intervaltree.IntervalTree()
-    d = dict([(i, (c.x, c.x + c.width, i)) for i, c in enumerate(glyphs)])
-    intervals = list(d.values())
-    for intr in intervals:
-        t.add(intervaltree.Interval(intr[0], intr[1]))
-    glyph_limits = join_intervals(intervals)
-    new_rects = []
-    for gl in glyph_limits:
-        x = t.overlap(gl[0], gl[1])
-        all_inds = set()
-        for intr in x:
-            inds = numbered_glyphs[(intr.begin, intr.end)]
-            all_inds.update(inds)
-        br = bounding_rect(list(all_inds), glyphs)
-        new_rects.append(br)
-
-    return new_rects
 
 
 def find_ordered_glyphs(
@@ -120,19 +98,9 @@ def find_ordered_glyphs(
     return flat_list, baselines, lines_of_words
 
 
-def bounding_rects_for_words(words: List[List[Glyph]]) -> List[glyph_result]:
-    new_rects = []
-    for w in words:
-        lst = list(range(len(w)))
-        br = bounding_rect(
-            lst, [glyph_result((g.x, g.y, g.width, g.height)) for g in w]
-        )
-        new_rects.append(br)
-    return new_rects
-
-
 if __name__ == "__main__":
     filename = "math21_1_23.png"
+    filename = "fa_p18.png"
     orig = cv2.imread(filename)
     h, w, _ = orig.shape
     glyphs, baselines, lines_of_words = find_ordered_glyphs(filename)
@@ -147,7 +115,13 @@ if __name__ == "__main__":
                     (0, 0, 255),
                     2,
                 )
-        rects = bounding_rects_for_words(words)
+        rects = bounding_rects_for_words(
+            [
+                [glyph_result((w.x, w.y, w.width, w.height)) for w in word]
+                for word in words
+            ]
+        )
+        ##rects = bounding_rects_for_words(words)
         for gl in rects:
             cv2.rectangle(
                 orig, (gl.x, gl.y), (gl.x + gl.width, gl.y + gl.height), (0, 255, 0), 2
