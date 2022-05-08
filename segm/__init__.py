@@ -38,3 +38,7 @@ def find_grouped_glyphs(glyphs):
 
 def find_bounding_rects_for_words(words):
     return get_bounding_rects_for_words(words)
+
+
+def find_ordered_glyphs(joined_rects):
+    return get_ordered_glyphs(joined_rects, joined_rects.dtype)

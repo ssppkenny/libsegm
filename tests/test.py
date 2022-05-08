@@ -1,7 +1,12 @@
-from segm import join_rects, join_intervals, glyph_result, find_neighbors, find_baseline, find_grouped_glyphs as group_glyphs
+from segm import join_rects, join_intervals, glyph_result, find_neighbors, find_baseline, find_grouped_glyphs as group_glyphs, find_ordered_glyphs
 import cv2
 import numpy as np
 import pytest
+
+def test_find_ordered_glyphs():
+    img = cv2.imread('vd_p214.png', cv2.IMREAD_GRAYSCALE)
+    lines_of_words = find_ordered_glyphs(img)
+    assert len(lines_of_words) == 33
 
 def test_group_glyphs():
     r1 = glyph_result((0, 0, 2, 3))

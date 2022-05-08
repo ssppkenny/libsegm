@@ -21,6 +21,7 @@ static PyStructSequence_Field glyph_result_fields[] =
     {"y", "y coord"},
     {"width", "width"},
     {"height", "height"},
+    {"shift", "shift"},
     {NULL}
 };
 
@@ -29,7 +30,7 @@ static PyStructSequence_Desc glyph_result_desc =
     "glyph_result",
     NULL,
     glyph_result_fields,
-    4
+    5
 };
 
 static PyObject* get_bounding_rects_for_words(PyObject* self, PyObject *args) {
@@ -67,6 +68,7 @@ static PyObject* get_bounding_rects_for_words(PyObject* self, PyObject *args) {
         PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(new_rects[i].y));
         PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(new_rects[i].width));
         PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(new_rects[i].height));
+        PyStructSequence_SET_ITEM(res, 4, PyLong_FromLong(0));
         PyList_SetItem(list, i, (PyObject*)res);
     }
 
@@ -101,6 +103,7 @@ static PyObject* get_grouped_glyphs(PyObject* self, PyObject *args) {
         PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(new_rects[i].y));
         PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(new_rects[i].width));
         PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(new_rects[i].height));
+        PyStructSequence_SET_ITEM(res, 4, PyLong_FromLong(0));
         PyList_SetItem(list, i, (PyObject*)res);
     }
 
@@ -176,6 +179,7 @@ static PyObject* get_word_limits(PyObject* self, PyObject *args) {
             PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(word[j].y));
             PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(word[j].width));
             PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(word[j].height));
+            PyStructSequence_SET_ITEM(res, 4, PyLong_FromLong(0));
             PyList_SetItem(sublist, j, (PyObject*)res);
         }
         PyList_SetItem(list, i, sublist);
@@ -224,6 +228,7 @@ static PyObject* get_bounding_rect(PyObject* self, PyObject *args) {
     PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(r.y));
     PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(r.width));
     PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(r.height));
+    PyStructSequence_SET_ITEM(res, 4, PyLong_FromLong(0));
     
     return (PyObject*)res;
 
@@ -326,6 +331,7 @@ static PyObject* get_neighbors(PyObject* self, PyObject *args) {
         PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(r.y));
         PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(r.width));
         PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(r.height));
+        PyStructSequence_SET_ITEM(res, 4, PyLong_FromLong(0));
         
         PyTuple_SetItem(t, 0, (PyObject*)res);
 
@@ -376,15 +382,8 @@ static PyObject* get_joined_intervals(PyObject* self, PyObject *args) {
     return ret_val;
     
 }
-static PyObject* get_joined_rects(PyObject* self, PyObject *args)
-{
-    PyObject *input;
-    PyArray_Descr *dtype = NULL;
-    if (!PyArg_ParseTuple(args, "OO&", &input, PyArray_DescrConverter, &dtype))
-    {
-        return NULL;
-    }
 
+static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype) {
 
     int nd = PyArray_NDIM(input);
     npy_intp* dims = PyArray_DIMS(input);
@@ -398,7 +397,8 @@ static PyObject* get_joined_rects(PyObject* self, PyObject *args)
     std::set<std::array<int,4>> enclosing_rects;
     if (nd >= 2)
     {
-        cv::Mat mat = cv::Mat(cv::Size(dims[1], dims[0]), CV_8UC1, PyArray_DATA(contig));
+        cv::Mat m = cv::Mat(cv::Size(dims[1], dims[0]), CV_8UC1, PyArray_DATA(contig));
+        cv::Mat mat= m.clone();
         threshold(mat, mat, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
 
         Mat labeled(mat.size(), mat.type());
@@ -461,6 +461,68 @@ static PyObject* get_joined_rects(PyObject* self, PyObject *args)
 
     }
 
+    return new_rects;
+    
+}
+
+
+static PyObject* get_ordered_glyphs(PyObject* self, PyObject *args) {
+    PyObject *input;
+    PyArray_Descr *dtype = NULL;
+    if (!PyArg_ParseTuple(args, "OO&", &input, PyArray_DescrConverter, &dtype))
+    {
+        return NULL;
+    }
+
+    std::vector<cv::Rect> new_rects = join_rects(input, dtype);
+    
+
+    std::vector<words_struct> lines_of_words = find_ordered_glyphs(new_rects);
+
+
+    PyObject *ret_val = PyList_New(lines_of_words.size());
+
+    for (int i=0; i<lines_of_words.size(); i++) {
+        words_struct words_s = lines_of_words[i];
+        double lower = words_s.lower;
+        std::vector<std::vector<cv::Rect>> words = words_s.words;
+        PyObject *w = PyList_New(words.size());
+        for (int j=0; j<words.size(); j++) {
+            std::vector<cv::Rect> word = words[j];
+            PyObject *w1 = PyList_New(word.size());
+            for (int n=0; n<word.size(); n++) {
+                cv::Rect r = word[n];
+                PyStructSequence* res = (PyStructSequence*) PyStructSequence_New(&GlyphResultType);
+                PyStructSequence_SET_ITEM(res, 0, PyLong_FromLong(r.x));
+                PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(r.y));
+                PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(r.width));
+                PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(r.height));
+                PyStructSequence_SET_ITEM(res, 4, PyLong_FromLong((int)lower - (r.y + r.height)));
+
+                PyList_SetItem(w1, n, (PyObject*)res);
+
+            }
+            PyList_SetItem(w, j, w1);
+        }
+        PyList_SetItem(ret_val, i, w);
+    }
+
+    return ret_val;
+        
+}
+
+
+static PyObject* get_joined_rects(PyObject* self, PyObject *args)
+{
+    PyObject *input;
+    PyArray_Descr *dtype = NULL;
+    if (!PyArg_ParseTuple(args, "OO&", &input, PyArray_DescrConverter, &dtype))
+    {
+        return NULL;
+    }
+
+    std::vector<cv::Rect> new_rects = join_rects(input, dtype);
+    
     int N = new_rects.size();
     PyObject* list = PyList_New(N);
     for (int i = 0; i < N; ++i)
@@ -470,6 +532,7 @@ static PyObject* get_joined_rects(PyObject* self, PyObject *args)
         PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(new_rects[i].y));
         PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(new_rects[i].width));
         PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(new_rects[i].height));
+        PyStructSequence_SET_ITEM(res, 4, PyLong_FromLong(0));
         PyList_SetItem(list, i, (PyObject*)res);
     }
 
@@ -527,6 +590,7 @@ static PyObject* get_glyphs(PyObject* self, PyObject *args)
         PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(glyphs.at(i).y));
         PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(glyphs.at(i).width));
         PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(glyphs.at(i).height));
+        PyStructSequence_SET_ITEM(res, 4, PyLong_FromLong(0));
         PyList_SetItem(list, i, (PyObject*)res);
     }
 
@@ -556,6 +620,7 @@ static PyMethodDef method_table[] =
     {"get_baseline", (PyCFunction) get_baseline, METH_VARARGS, "gets baseline for a list of glyphs"},
     {"get_grouped_glyphs", (PyCFunction) get_grouped_glyphs, METH_VARARGS, "gets grouped glyphs"},
     {"get_bounding_rects_for_words", (PyCFunction) get_bounding_rects_for_words, METH_VARARGS, "gets bounding rects for words"},
+    {"get_ordered_glyphs", (PyCFunction) get_ordered_glyphs, METH_VARARGS, "gets ordered glyphs"},
     {NULL, NULL, 0, NULL} // Sentinel value ending the table
 };
 
