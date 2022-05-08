@@ -8,7 +8,7 @@
 \begin{document}
 \maketitle
 
-\begin{multicols}{2}
+
 \section{Problem Description}
 Sometimes we have books which are scanned or photographed. To be able to read such books on a mobile device we have to make pages readable. We have to find all the printed symbols and separate them from images. After that the page is redrawn in a larger scale and all the symbols are reflowed.
 
@@ -17,17 +17,17 @@ Sometimes we have books which are scanned or photographed. To be able to read su
 A scanned page is translated into an array of pixel intesities. For the reflowed page we create a new array. Below we have the steps necessary to reflow the page image.
 
 \begin{enumerate}
-\item Open an image file as a grayscale array.
+\item Open an image file in grayscale mode.
 \item Threshold the image with OTSU and BINARY\_INV.
-\item Find all components containing connected non-zero pixels.
-\item For every component find bounding rectangles.
-\item Eliminate all rectangles contained inside others.
-\item Join all intersecting rectangles.
+\item Find all components containing connected non-zero pixels. See Fig. \ref{fig:letters}
+\item For every component find bounding rectangles. See Fig. \ref{fig:rectangles}
+\item Eliminate all rectangles contained inside others. See Fig. \ref{fig:inner_rectangles}
+\item Join all intersecting rectangles. See Fig \ref{fig:join_rectangles}
 \item Make a histogram of rectangle heights.
 \item The height with the highest frequency is the text height.
 \item Mark or remove all components with the hight or width \textless than $ 5 \times $ most frequent text hight.
 \item For every rectangle find a neighboring one to the right, it is a nearest rectangle  intersecting or being inside of the interval of heights [y, y + height], where y is the ordinate coordinate of the component's left upper corner.
-\item Create a graph, add an edge between all components and their immediate right neighbors.
+\item Create a graph, add an edge between all components and their immediate right neighbors. See Fig \ref{fig:connected_letters}
 \item Find connected components in that graph.
 \item Join intersecting ones.
 \item Those components are text lines.
@@ -37,9 +37,35 @@ A scanned page is translated into an array of pixel intesities. For the reflowed
 
 \end{enumerate}
 
-
-\end{multicols}
+\begin{figure}
+	\includegraphics[scale=0.1]{letters.png}
+	\caption{Connected components of pixels}
+	\label{fig:letters}
+\end{figure}
 	
+\begin{figure}
+	\includegraphics[scale=0.13]{rects.png}
+	\caption{Components with bounding rectangles}
+	\label{fig:rectangles}
+\end{figure}
+
+\begin{figure}
+	\includegraphics[scale=0.3]{inner_rects.png}
+	\caption{Inner rectangles should be removed, green rectangles are removed as seen in two lower rectangles}
+	\label{fig:inner_rectangles}
+\end{figure}
+
+\begin{figure}
+	\includegraphics[scale=0.3]{join_rects.png}
+	\caption{Two red rectangles on the left become one green rectangle on the right}
+	\label{fig:join_rectangles}
+\end{figure}
+
+\begin{figure}
+	\includegraphics[scale=0.3]{connected_letters.png}
+	\caption{Connect every letter with it's right immediate neighbor}
+	\label{fig:connected_letters}
+\end{figure}
 
 \begin{figure}
 \includegraphics[width=\textwidth]{baseline.png}
