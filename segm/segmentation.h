@@ -5,15 +5,14 @@
 #include "interval_tree.hpp"
 
 struct words_struct {
-  double lower;
-  std::vector<std::vector<cv::Rect>> words;
+    double lower;
+    std::vector<std::vector<cv::Rect>> words;
 };
 
 using namespace lib_interval_tree;
 
-//std::map<std::tuple<int,int>, std::vector<cv::Rect>> find_lines(std::vector<cv::Rect>& joined_rects);
-
-std::vector<words_struct> find_ordered_glyphs(std::vector<cv::Rect>& joined_rects);
+std::vector<words_struct> find_ordered_glyphs(
+    std::vector<cv::Rect>& joined_rects);
 
 std::map<int, std::tuple<cv::Rect, int, double>> find_neighbors(
     std::vector<cv::Rect>& glyphs,
