@@ -9,22 +9,22 @@ def test_find_ordered_glyphs():
     assert len(lines_of_words) == 33
 
 def test_group_glyphs():
-    r1 = glyph_result((0, 0, 2, 3))
-    r2 = glyph_result((1, 1, 2, 2))
-    r3 = glyph_result((5, 0, 2, 3))
-    r4 = glyph_result((6, 0, 2, 3))
+    r1 = glyph_result((0, 0, 2, 3, 0))
+    r2 = glyph_result((1, 1, 2, 2, 0))
+    r3 = glyph_result((5, 0, 2, 3, 0))
+    r4 = glyph_result((6, 0, 2, 3, 0))
     a, b = group_glyphs([r1, r2, r3, r4])
-    assert a == glyph_result((0, 0, 3, 3))
-    assert b == glyph_result((5, 0, 3, 3))
+    assert a == glyph_result((0, 0, 3, 3, 0))
+    assert b == glyph_result((5, 0, 3, 3, 0))
 
 def test_find_baseline():
-    r1 = glyph_result((0, 1, 2, 2))
-    r2 = glyph_result((3, 1, 2, 2))
-    r3 = glyph_result((5, 1, 2, 2))
-    r4 = glyph_result((7, 0, 2, 3))
-    r5 = glyph_result((9, 1, 2, 2))
-    r6 = glyph_result((11, 1, 2, 2))
-    r7 = glyph_result((13, 0, 2, 3))
+    r1 = glyph_result((0, 1, 2, 2, 0))
+    r2 = glyph_result((3, 1, 2, 2, 0))
+    r3 = glyph_result((5, 1, 2, 2, 0))
+    r4 = glyph_result((7, 0, 2, 3, 0))
+    r5 = glyph_result((9, 1, 2, 2, 0))
+    r6 = glyph_result((11, 1, 2, 2, 0))
+    r7 = glyph_result((13, 0, 2, 3, 0))
     bl = find_baseline([r1, r2, r3, r4, r5, r6, r7])
     assert 3.0 == pytest.approx(bl, 0.1)
 
@@ -44,12 +44,12 @@ def test_join_intervals():
 
 
 def test_find_neighbors():
-    r1 = glyph_result((1, 1, 1, 1))
-    r2 = glyph_result((3, 1, 1, 1))
-    r3 = glyph_result((5, 1, 1, 1))
-    r4 = glyph_result((1, 3, 1, 1))
-    r5 = glyph_result((3, 3, 1, 1))
-    r6 = glyph_result((5, 3, 1, 1))
+    r1 = glyph_result((1, 1, 1, 1, 0))
+    r2 = glyph_result((3, 1, 1, 1, 0))
+    r3 = glyph_result((5, 1, 1, 1, 0))
+    r4 = glyph_result((1, 3, 1, 1, 0))
+    r5 = glyph_result((3, 3, 1, 1, 0))
+    r6 = glyph_result((5, 3, 1, 1, 0))
     nn = np.array(
         [
             [0, 1, 3, 4, 2, 5],
