@@ -106,7 +106,17 @@ def distance(s: set[int], pi: int, jr: list[glyph_result]) -> float:
     return rv
 
 
-def find_pictures_with_captions(filename, symbols_from=1, symbols_to=200):
+def find_pictures_with_captions(
+    filename: str, symbols_from: int = 1, symbols_to: int = 200
+) -> None:
+    """
+    This function looks for pictures and tries to find the captions,
+    :param filename:
+    :param symbols_from:
+    :param symbols_to:
+    :return: PictureResult with all the glyph rectangles, bounding rectagles for pictures with captions,
+    distinct colors for all separate blocks and those blocks as graph connected components
+    """
     set_distance_type("euclidean")
     img = cv2.imread(filename, 0)
     jr = join_rects(img)
@@ -182,8 +192,15 @@ def find_pictures_with_captions(filename, symbols_from=1, symbols_to=200):
 
 
 def draw_results(
-    filename, bounding_rects, jr, ccc, colors, regions=False, output_filename="out.png"
+    filename: str,
+    picture_results: PictureResults,
+    regions=False,
+    output_filename="out.png",
 ):
+    bounding_rects = picture_results.bounding_rects
+    jr = picture_results.joined_rects
+    ccc = picture_results.connected_components
+    colors = picture_results.colors
     orig = cv2.imread(filename)
     if regions:
         for i, j in enumerate(jr):
@@ -200,10 +217,4 @@ def draw_results(
 if __name__ == "__main__":
     filename = "vd_p277.png"
     picture_results = find_pictures_with_captions(filename)
-    draw_results(
-        filename,
-        picture_results.bounding_rects,
-        picture_results.joined_rects,
-        picture_results.connected_components,
-        picture_results.colors,
-    )
+    draw_results(filename, picture_results)
