@@ -33,7 +33,7 @@ std::vector<std::pair<interval<int>, interval<int>>> all_pairs(
     return return_value;
 }
 
-std::vector<cv::Rect> join_rects(vector<cv::Rect> rects) {
+std::vector<cv::Rect> join_rects(vector<cv::Rect>& rects) {
     std::vector<cv::Rect> joined_rects;
     std::sort(rects.begin(), rects.end(), less_than_rect());
 

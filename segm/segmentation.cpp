@@ -244,7 +244,7 @@ std::vector<words_struct> find_ordered_glyphs(
 
     ::flann::Matrix<double> dataset(&data[0][0], size, 2);
 
-    int k = std::min(20, size);
+    int k = std::min(100, size);
 
     ::flann::Index<::flann::L2<double>> index(dataset,
                                               ::flann::KDTreeIndexParams(1));

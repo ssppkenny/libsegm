@@ -18,7 +18,7 @@ struct sweep_event
 
 using namespace lib_interval_tree;
 
-std::vector<cv::Rect> join_rects(std::vector<Rect> rects);
+std::vector<cv::Rect> join_rects(std::vector<Rect>& rects);
 
 std::vector<std::pair<interval<int>,interval<int>>> all_pairs(std::vector<interval<int>> intervals);
 

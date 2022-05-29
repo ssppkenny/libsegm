@@ -73,6 +73,19 @@ A scanned page is translated into an array of pixel intesities. For the reflowed
 \caption{Baseline detection}
 \end{figure}
 
+\section{Page Reflow Algorithm}
+
+Page Reflow process has as input lines with words and symbols. Zoom, new page width and page margins are input parameters as well.
+
+\begin{enumerate}
+	\item Transform 
+	\item For every line find leftmost coordinate.
+	\item The minimum of those coordinates is a left text block coordinate.
+	\item For every line calculate indents and mark those which are longer than 2 character widths as parafraph beginnings
+	\item Split lines into paragraphs and save every paragraph indent.
+	\item Transform the 
+\end{enumerate}
+
 	
 \end{document}
 	
