@@ -124,8 +124,10 @@ def find_pictures_with_captions(
     freqs, sizes = np.histogram(heights, bins=100)
     ind = np.argmax(freqs)
     most_frequent_height = int(sizes[ind + 1])
+    ## indexes of picture rectangles are those with the hight > than 5 * most frequent rectangle hight
     pic_inds = [i for i, r in enumerate(jr) if r.height > 5 * most_frequent_height]
 
+    ## centers of the rectangles
     centroids = np.zeros((len(jr), 2))
     for i, r in enumerate(jr):
         centroids[i, :] = np.array([r.x + r.width / 2, r.y + r.height / 2])
@@ -149,26 +151,27 @@ def find_pictures_with_captions(
         for nb in nbs:
             x1, y1 = centroids[nb]
             x2, y2 = centroids[i]
+            # connect rectangles if the distance between them is less then 3 * most frequent rectangle hight
             if np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2) < 3 * most_frequent_height:
                 g.add_edge(nb, i)
             else:
                 g.add_node(i)
 
     cc = [x for x in nx.connected_components(g)]
-
-    colors = distinctipy.get_colors(len(cc))
-    colors = [(int(255 * a), int(255 * b), int(255 * c)) for a, b, c in colors]
-
-    ccc = dict()
+    connected_components = dict()
     for i, c in enumerate(cc):
         for e in c:
-            ccc[e] = i
+            connected_components[e] = i
+
+    colors = get_distinct_colors(len(cc))
 
     bounding_rects = []
 
-    small_components = [s for s in cc if 0 < len(s) < 200]
+    # small components are those with rectangle count between symbols_from and symbols_to
+    small_components = [s for s in cc if symbols_from < len(s) < symbols_to]
 
     belongs = defaultdict(list)
+    ## for every small components find which picture it belongs to
     for sc in small_components:
         ds = []
         for pi in pic_inds:
@@ -188,7 +191,13 @@ def find_pictures_with_captions(
         br = find_bounding_rect(list(range(len(rects1))), rects1)
         bounding_rects.append(br)
 
-    return PictureResults(jr, bounding_rects, colors, ccc)
+    return PictureResults(jr, bounding_rects, colors, connected_components)
+
+
+def get_distinct_colors(n):
+    colors = distinctipy.get_colors(n)
+    colors = [(int(255 * a), int(255 * b), int(255 * c)) for a, b, c in colors]
+    return colors
 
 
 def draw_results(
