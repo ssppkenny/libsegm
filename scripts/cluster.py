@@ -108,7 +108,7 @@ def distance(s: set[int], pi: int, jr: list[glyph_result]) -> float:
 
 def find_pictures_with_captions(
     filename: str, symbols_from: int = 1, symbols_to: int = 200
-) -> None:
+) -> PictureResults:
     """
     This function looks for pictures and tries to find the captions,
     :param filename:
@@ -196,7 +196,7 @@ def draw_results(
     picture_results: PictureResults,
     regions=False,
     output_filename="out.png",
-):
+) -> None:
     bounding_rects = picture_results.bounding_rects
     jr = picture_results.joined_rects
     ccc = picture_results.connected_components
