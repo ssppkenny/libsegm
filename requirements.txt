@@ -9,3 +9,4 @@ pyflann3==1.8.4.1
 pyparsing==3.0.8
 scikit-build==0.14.1
 sortedcontainers==2.4.0
+distinctipy==1.2.1
