@@ -388,3 +388,240 @@ std::vector<words_struct> find_ordered_glyphs(
 
     return lines_of_words;
 }
+
+double dist(std::tuple<int,int> p1, std::tuple<int,int> p2) {
+    int x1 = std::get<0>(p1);
+    int y1 = std::get<1>(p1);
+    int x2 = std::get<0>(p2);
+    int y2 = std::get<1>(p2);
+    return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));    
+}
+
+dist_info dist_rects(cv::Rect& r1, cv::Rect& r2) {
+    Position position = Position::UNKNOWN;
+    int ab = r1.x;
+    int ae = r1.x + r1.width;
+    int bb = r2.x;
+    int be = r2.x + r2.width;
+    int cb = r1.y;
+    int ce = r1.y + r1.height;
+    int db = r2.y;
+    int de = r2.y + r2.height;
+
+    bool no_x_overlap = bb > ae || ab > be;
+    bool no_y_overlap = db > ce || cb > de;
+
+    std::vector<double> distances;
+
+    if (no_x_overlap && no_y_overlap) {
+        std::vector<std::tuple<int,int>> points1 {std::make_tuple(r1.x, r1.y), std::make_tuple(r1.x, r1.y + r1.height), std::make_tuple(r1.x + r1.width, r1.y), std::make_tuple(r1.x + r1.width, r1.y + r1.height)};        
+        std::vector<std::tuple<int,int>> points2 {std::make_tuple(r2.x, r2.y), std::make_tuple(r2.x, r2.y + r2.height), std::make_tuple(r2.x + r2.width, r2.y), std::make_tuple(r2.x + r2.width, r2.y + r2.height)};
+
+        for (auto p: points1) {
+            for (auto q : points2) {
+                distances.push_back(dist(p,q));
+            }
+        }
+
+        auto min_value = *std::min_element(distances.begin(),distances.end());
+        dist_info di = {min_value, position};
+        return di;
+    } 
+    if (no_x_overlap && !no_y_overlap) {
+        int x1 = r1.x;
+        int x2 = r1.x + r1.width;
+        int x3 = r2.x;
+        int x4 = r2.x + r2.width;
+        position = r1.x < r2.x ? Position::LEFT : Position::RIGHT;
+        std::vector<int> distances {std::abs(x1-x3), std::abs(x1-x4), std::abs(x2-x3), std::abs(x2 -x4)};
+        auto min_value = *std::min_element(distances.begin(), distances.end());
+        dist_info di = {(double)min_value, position};
+        return di;
+    }
+
+    if (!no_x_overlap && no_y_overlap) {
+        int x1 = r1.y;
+        int x2 = r1.y + r1.height;
+        int x3 = r2.y;
+        int x4 = r2.y + r2.height;
+        position = r1.y < r2.y ? Position::UP : Position::BOTTOM;
+        std::vector<int> distances {std::abs(x1-x3), std::abs(x1-x4), std::abs(x2-x3), std::abs(x2 -x4)};
+        auto min_value = *std::min_element(distances.begin(), distances.end());
+        dist_info di = {(double)min_value, position};
+        return di;
+    }
+
+    if (!no_x_overlap && !no_y_overlap) {
+        dist_info di = {0, position};
+        return di;
+    }
+
+    dist_info di = {0, position};
+    return di;
+
+
+}
+
+dist_info distance(std::vector<int>& sc, int pi, std::vector<cv::Rect>& jr) {
+    std::vector<cv::Rect> rects;
+    for (int i=0;i<sc.size();i++) {
+        int n = sc[i];
+        cv::Rect r = jr[n];
+        rects.push_back(r);
+    }
+
+    std::set<int> inds;
+    for (int i=0;i<rects.size(); i++) {
+        inds.insert(i);
+    }
+
+    cv::Rect br = bounding_rect(inds, rects);
+    cv::Rect pic = jr[pi];
+    return dist_rects(br, pic);
+
+}
+
+std::map<int,std::vector<std::vector<int>>> detect_belonging_captions(std::vector<cv::Rect>& jr, std::vector<int>& pic_inds, std::vector<std::vector<int>> small_components, double most_frequent_height, double multiplier) {
+    std::map<int, std::vector<std::vector<int>>> belongs;
+    for (int k=0; k<small_components.size(); k++) {
+        std::vector<std::tuple<double,int,Position>> ds;
+        std::vector<int> sc = small_components[k];
+        for (int j=0;j<pic_inds.size(); j++) {
+            int pi = pic_inds[j];
+            dist_info di = distance(sc, pi, jr);
+            if (di.pos != Position::UNKNOWN) {
+                ds.push_back(std::make_tuple(di.distance, pi, di.pos));
+            }
+        }
+        if (ds.size() > 0) {
+            std::sort(ds.begin(), ds.end());
+            std::tuple<double,int,Position> t = ds[0];
+            int pos = std::get<1>(t);
+            printf("distance and limit value are %f, %f\n", std::get<0>(t), multiplier * most_frequent_height);
+            if (std::get<0>(t) < multiplier * most_frequent_height) {
+                if (belongs.find(pos) == belongs.end()) {
+                    std::vector<std::vector<int>> v;
+                    v.push_back(sc);
+                    belongs[pos] = v;
+                } else {
+                    std::vector<std::vector<int>> v = belongs[pos];
+                    v.push_back(sc);
+                    belongs[pos] = v;
+                }
+            }
+        }
+    }
+    return belongs;
+}
+std::map<int,std::vector<std::vector<int>>> detect_captions(std::vector<cv::Rect>& joined_rects) {
+    std::map<int,std::vector<std::vector<int>>> belongs;
+    double s = 0.0;
+    int n = joined_rects.size();
+    std::vector<int> pic_inds;
+    for (int i=0;i<n;i++) {
+        cv::Rect jr = joined_rects[i];
+        s += jr.height;
+    }
+
+    double most_frequent_height = s / joined_rects.size();
+    for (int i=0;i<n;i++) {
+        cv::Rect jr = joined_rects[i];
+        if (jr.height > 7*most_frequent_height) {
+            pic_inds.push_back(i);
+        }
+    }
+    double* distmat = new double[(n*(n-1))/2];
+    int i, k, j;
+    for (i=k=0; i<n; i++) {
+        for (j=i+1; j<n; j++) {
+        // compute distance between observables i and j  
+        double x1 = (joined_rects[i].x + joined_rects[i].width)/2;
+        double y1 = (joined_rects[i].y + joined_rects[i].height)/2;
+        double x2 = (joined_rects[j].x + joined_rects[j].width)/2;
+        double y2 = (joined_rects[j].y + joined_rects[j].height)/2;
+        distmat[k] = sqrt( (x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2) );
+        k++;
+        }
+    }
+    int* merge = new int[2*(n-1)];
+    double* height = new double[n-1];
+    hclust_fast(n, distmat, HCLUST_METHOD_SINGLE, merge, height);
+
+
+    int* labels = new int[n];
+
+    int last_cluster_count = std::numeric_limits<int>::max();   
+    double x = 0.5;
+    while (x<=4) {
+        double coef = x;
+        x+=0.1;
+        cutree_cdist(n, merge, height, most_frequent_height * coef, labels);
+
+        std::map<int,std::vector<int>> res;
+        std::set<int> keys;
+
+        for (int t=0;t<n;t++) {
+            int key = labels[t];
+            keys.insert(key);
+            if (res.find(key) != res.end()) {
+                std::vector<int> v = res[key];
+                v.push_back(t);
+                res[key] = v;
+            } else {
+                std::vector<int> v;
+                v.push_back(t);
+                res[key] = v;
+            }
+        }
+
+        std::vector<std::vector<int>> small_components;
+
+        if (keys.size() == last_cluster_count) {
+
+            std::map<int,std::vector<int>> res1;
+            std::set<int> keys1;
+            cutree_k(n, merge, last_cluster_count, labels);
+            for (int t=0;t<n;t++) {
+                int key = labels[t];
+                keys1.insert(key);
+                if (res1.find(key) != res1.end()) {
+                    std::vector<int> v = res1[key];
+                    v.push_back(t);
+                    res1[key] = v;
+                } else {
+                    std::vector<int> v;
+                    v.push_back(t);
+                    res1[key] = v;
+                }
+            }
+
+
+            std::vector<std::vector<int>> small_components1;
+            for (auto key : keys1) {
+                std::vector<int> sc = res1[key];
+                if (sc.size() > 1 && sc.size() < 80) {
+                   small_components1.push_back(sc);
+                }
+            }
+
+           printf("small connected_components size is %d\n", small_components.size());
+           belongs = detect_belonging_captions(joined_rects, pic_inds, small_components1, most_frequent_height, coef*2.5); 
+           printf("belongs size is %d\n", belongs.size());
+           break;
+        }
+
+        last_cluster_count = keys.size();
+
+
+    }
+
+    printf("cluster count %d\n", last_cluster_count);
+
+
+
+    delete[] distmat;
+    delete[] merge;
+    delete[] height;
+    delete[] labels;
+    return belongs;
+}

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(segm)
 ## common.cpp Enclosure.cpp ImageNode.cpp LineSpacing.cpp PageSegmenter.cpp Reflow.cpp Xycut.cpp segm.cpp )
-set(SRCS segm/common.cpp segm/Enclosure.cpp segm/IntervalJoin.cpp segm/ImageNode.cpp segm/LineSpacing.cpp segm/PageSegmenter.cpp segm/RectJoin.cpp segm/Reflow.cpp segm/Xycut.cpp segm/segmentation.cpp segm/segm.cpp) 
+set(SRCS segm/common.cpp segm/Enclosure.cpp segm/fastcluster_dm.cpp segm/fastcluster.cpp segm/IntervalJoin.cpp segm/ImageNode.cpp segm/LineSpacing.cpp segm/PageSegmenter.cpp segm/RectJoin.cpp segm/Reflow.cpp segm/Xycut.cpp segm/segmentation.cpp segm/segm.cpp) 
 
 set(ignoreMe "${SKBUILD}")
 

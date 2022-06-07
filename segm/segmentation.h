@@ -3,13 +3,34 @@
 
 #include "common.h"
 #include "interval_tree.hpp"
+#include "fastcluster.h"
 
 struct words_struct {
     double lower;
     std::vector<std::vector<cv::Rect>> words;
 };
 
+
+
+enum Position {LEFT = 1, RIGHT, BOTTOM, UP, UNKNOWN};
+
+struct dist_info {
+    double distance;
+    Position pos;
+};
+
+
 using namespace lib_interval_tree;
+
+double dist(std::tuple<int,int> p1, std::tuple<int,int> p2);
+
+dist_info dist_rects(cv::Rect& r1, cv::Rect& r2);
+
+dist_info distance(std::vector<int>& sc, int pi, std::vector<cv::Rect>& jr);
+
+std::map<int,std::vector<std::vector<int>>> detect_belonging_captions(std::vector<cv::Rect>& jr, std::vector<int>& pic_inds, std::vector<std::vector<int>> small_components, double most_frequent_height, double multiplier);
+
+std::map<int,std::vector<std::vector<int>>> detect_captions(std::vector<cv::Rect>& joined_rects);
 
 std::vector<words_struct> find_ordered_glyphs(
     std::vector<cv::Rect>& joined_rects);

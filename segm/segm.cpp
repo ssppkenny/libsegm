@@ -448,6 +448,9 @@ static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype)
             int area = rectComponents.at<int>(Point(4, i));
 
             Rect rectangle(x, y, w, h);
+            if (w > 20 * h || h > 20 * w) {
+                continue;
+            }
             rects.push_back(rectangle);
             areas.push_back(area);
             sum_of_areas += area;
@@ -493,7 +496,49 @@ static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype)
 
     }
 
-    return new_rects;
+    auto belongs = detect_captions(new_rects);
+
+    std::vector<int> belong_keys;
+    for(auto const& itmap: belongs) {
+        belong_keys.push_back(itmap.first);
+    }
+
+    std::vector<int> inds_to_ignore;
+    std::vector<cv::Rect> rects_with_joined_captions;
+    for (auto key : belong_keys) {
+        printf("belongs key = %d\n", key);
+        inds_to_ignore.push_back(key);
+        std::vector<std::vector<int>> small_components = belongs[key];
+        std::vector<cv::Rect> to_join;
+        to_join.push_back(new_rects[key]);
+        for (auto sc : small_components) {
+            printf("small component size = %d\n", sc.size());
+            std::cout << "[";
+            for (auto ind : sc) {
+                std::cout << ind << ",";
+                inds_to_ignore.push_back(ind);
+                to_join.push_back(new_rects[ind]);
+            }
+            std::cout << "]\n";
+        }
+        std::set<int> rect_inds;
+        for (int l=0;l<to_join.size();l++) {
+            rect_inds.insert(l);
+        }
+
+
+        cv::Rect br = bounding_rect(rect_inds, to_join);
+        rects_with_joined_captions.push_back(br);
+
+    }
+
+    for (int i=0;i<new_rects.size(); i++) {
+        if (std::find(inds_to_ignore.begin(), inds_to_ignore.end(), i) == inds_to_ignore.end()) {
+            rects_with_joined_captions.push_back(new_rects[i]);
+        }
+    }
+
+    return rects_with_joined_captions;
 
 }
 
