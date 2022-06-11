@@ -31,6 +31,7 @@ jobs:
         python-version: "3.10"
     - name: Install dependencies
       run: |
+        sudo apt update
         sudo apt install libboost-dev libleptonica-dev libflann-dev libopencv-dev liblz4-dev cmake
         python -m pip install --upgrade pip
         pip install flake8 pytest
