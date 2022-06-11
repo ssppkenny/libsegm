@@ -390,12 +390,12 @@ std::vector<words_struct> find_ordered_glyphs(
     return lines_of_words;
 }
 
-double dist(std::tuple<int,int> p1, std::tuple<int,int> p2) {
+double dist(std::tuple<int, int> p1, std::tuple<int, int> p2) {
     int x1 = std::get<0>(p1);
     int y1 = std::get<1>(p1);
     int x2 = std::get<0>(p2);
     int y2 = std::get<1>(p2);
-    return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));    
+    return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
 
 dist_info dist_rects(cv::Rect& r1, cv::Rect& r2) {
@@ -415,26 +415,35 @@ dist_info dist_rects(cv::Rect& r1, cv::Rect& r2) {
     std::vector<double> distances;
 
     if (no_x_overlap && no_y_overlap) {
-        std::vector<std::tuple<int,int>> points1 {std::make_tuple(r1.x, r1.y), std::make_tuple(r1.x, r1.y + r1.height), std::make_tuple(r1.x + r1.width, r1.y), std::make_tuple(r1.x + r1.width, r1.y + r1.height)};        
-        std::vector<std::tuple<int,int>> points2 {std::make_tuple(r2.x, r2.y), std::make_tuple(r2.x, r2.y + r2.height), std::make_tuple(r2.x + r2.width, r2.y), std::make_tuple(r2.x + r2.width, r2.y + r2.height)};
+        std::vector<std::tuple<int, int>> points1{
+            std::make_tuple(r1.x, r1.y),
+            std::make_tuple(r1.x, r1.y + r1.height),
+            std::make_tuple(r1.x + r1.width, r1.y),
+            std::make_tuple(r1.x + r1.width, r1.y + r1.height)};
+        std::vector<std::tuple<int, int>> points2{
+            std::make_tuple(r2.x, r2.y),
+            std::make_tuple(r2.x, r2.y + r2.height),
+            std::make_tuple(r2.x + r2.width, r2.y),
+            std::make_tuple(r2.x + r2.width, r2.y + r2.height)};
 
-        for (auto p: points1) {
+        for (auto p : points1) {
             for (auto q : points2) {
-                distances.push_back(dist(p,q));
+                distances.push_back(dist(p, q));
             }
         }
 
-        auto min_value = *std::min_element(distances.begin(),distances.end());
+        auto min_value = *std::min_element(distances.begin(), distances.end());
         dist_info di = {min_value, position};
         return di;
-    } 
+    }
     if (no_x_overlap && !no_y_overlap) {
         int x1 = r1.x;
         int x2 = r1.x + r1.width;
         int x3 = r2.x;
         int x4 = r2.x + r2.width;
         position = r1.x < r2.x ? Position::LEFT : Position::RIGHT;
-        std::vector<int> distances {std::abs(x1-x3), std::abs(x1-x4), std::abs(x2-x3), std::abs(x2 -x4)};
+        std::vector<int> distances{std::abs(x1 - x3), std::abs(x1 - x4),
+                                   std::abs(x2 - x3), std::abs(x2 - x4)};
         auto min_value = *std::min_element(distances.begin(), distances.end());
         dist_info di = {(double)min_value, position};
         return di;
@@ -446,7 +455,8 @@ dist_info dist_rects(cv::Rect& r1, cv::Rect& r2) {
         int x3 = r2.y;
         int x4 = r2.y + r2.height;
         position = r1.y < r2.y ? Position::UP : Position::BOTTOM;
-        std::vector<int> distances {std::abs(x1-x3), std::abs(x1-x4), std::abs(x2-x3), std::abs(x2 -x4)};
+        std::vector<int> distances{std::abs(x1 - x3), std::abs(x1 - x4),
+                                   std::abs(x2 - x3), std::abs(x2 - x4)};
         auto min_value = *std::min_element(distances.begin(), distances.end());
         dist_info di = {(double)min_value, position};
         return di;
@@ -459,82 +469,95 @@ dist_info dist_rects(cv::Rect& r1, cv::Rect& r2) {
 
     dist_info di = {0, position};
     return di;
-
-
 }
 
 dist_info distance(std::vector<int>& sc, int pi, std::vector<cv::Rect>& jr) {
     std::vector<cv::Rect> rects;
-    for (int i=0;i<sc.size();i++) {
+    for (int i = 0; i < sc.size(); i++) {
         int n = sc[i];
         cv::Rect r = jr[n];
         rects.push_back(r);
     }
 
     std::set<int> inds;
-    for (int i=0;i<rects.size(); i++) {
+    for (int i = 0; i < rects.size(); i++) {
         inds.insert(i);
     }
 
     cv::Rect br = bounding_rect(inds, rects);
     cv::Rect pic = jr[pi];
     return dist_rects(br, pic);
-
 }
 
-std::map<int,std::vector<std::vector<int>>> detect_belonging_captions(cv::Mat& mat, std::vector<cv::Rect>& jr, std::vector<int>& pic_inds, std::vector<std::vector<int>> small_components, double most_frequent_height, double multiplier) {
+std::map<int, std::vector<std::vector<int>>> detect_belonging_captions(
+    cv::Mat& mat, std::vector<cv::Rect>& jr, std::vector<int>& pic_inds,
+    std::vector<std::vector<int>> small_components, double most_frequent_height,
+    double multiplier) {
     std::map<int, std::vector<std::vector<int>>> belongs;
-    for (int k=0; k<small_components.size(); k++) {
-        std::vector<std::tuple<double,int,Position>> ds;
+    for (int k = 0; k < small_components.size(); k++) {
+        std::vector<std::tuple<double, int, Position>> ds;
         std::vector<int> sc = small_components[k];
-        for (int j=0;j<pic_inds.size(); j++) {
+        for (int j = 0; j < pic_inds.size(); j++) {
             int pi = pic_inds[j];
             dist_info di = distance(sc, pi, jr);
             if (di.pos != Position::UNKNOWN) {
                 // add check if there is nothing aroud this component
-				// create bounding rect for small components
-				
-				std::set<int> rect_inds;
-				std::vector<cv::Rect> to_join;
-				for (int l=0;l<sc.size();l++) {
-					rect_inds.insert(l);
-					to_join.push_back(jr[sc[l]]);
-				}
+                // create bounding rect for small components
 
-				cv::Rect br = bounding_rect(rect_inds, to_join);
-				
+                std::set<int> rect_inds;
+                std::vector<cv::Rect> to_join;
+                for (int l = 0; l < sc.size(); l++) {
+                    rect_inds.insert(l);
+                    to_join.push_back(jr[sc[l]]);
+                }
 
+                cv::Rect br = bounding_rect(rect_inds, to_join);
 
-				int width = mat.cols;
-				int height = mat.rows;
-				int left = br.x - int(most_frequent_height) > 0 ? br.x - int(most_frequent_height) : 0;
-                int right = br.x + br.width + int(most_frequent_height) < width ?  br.x + br.width + int(most_frequent_height) : width - 1;
+                int width = mat.cols;
+                int height = mat.rows;
+                int left = br.x - int(most_frequent_height) > 0
+                               ? br.x - int(most_frequent_height)
+                               : 0;
+                int right = br.x + br.width + int(most_frequent_height) < width
+                                ? br.x + br.width + int(most_frequent_height)
+                                : width - 1;
 
-				int upper = br.y - int(most_frequent_height) > 0 ? br.y - int(most_frequent_height) : 0;
-                int lower = br.y + br.height + int(most_frequent_height) < height ?  br.y + br.height + int(most_frequent_height) : height - 1;
+                int upper = br.y - int(most_frequent_height) > 0
+                                ? br.y - int(most_frequent_height)
+                                : 0;
+                int lower =
+                    br.y + br.height + int(most_frequent_height) < height
+                        ? br.y + br.height + int(most_frequent_height)
+                        : height - 1;
 
-				int h = lower - upper;
-				int w = right - left;
-				cv::Rect outer = cv::Rect(left, upper, right - left, lower - upper);
-				cv::Mat m = mat(outer);
+                int h = lower - upper;
+                int w = right - left;
+                cv::Rect outer =
+                    cv::Rect(left, upper, right - left, lower - upper);
+                cv::Mat m = mat(outer);
 
-				int outer_sum = cv::countNonZero(mat(outer));
-				int inner_sum = cv::countNonZero(mat(br));
-                int area = 2*(lower-upper)*most_frequent_height + 2*(right-left)*most_frequent_height - 4*most_frequent_height*most_frequent_height;
-				double ratio = (outer_sum - inner_sum)/(double)area;
-			
-				bool is_caption = (ratio < 0.1);
-				//bool is_caption = (left_sum + upper_sum + right_sum < 10) || (upper_sum + right_sum + lower_sum < 10) || (right_sum + lower_sum + left_sum < 10) || (lower_sum + left_sum + upper_sum < 10);
+                int outer_sum = cv::countNonZero(mat(outer));
+                int inner_sum = cv::countNonZero(mat(br));
+                int area = 2 * (lower - upper) * most_frequent_height +
+                           2 * (right - left) * most_frequent_height -
+                           4 * most_frequent_height * most_frequent_height;
+                double ratio = (outer_sum - inner_sum) / (double)area;
 
-				if (is_caption && br.height < multiplier * most_frequent_height) {
-					ds.push_back(std::make_tuple(di.distance, pi, di.pos));
-				}
+                bool is_caption = (ratio < 0.1);
+                // bool is_caption = (left_sum + upper_sum + right_sum < 10) ||
+                // (upper_sum + right_sum + lower_sum < 10) || (right_sum +
+                // lower_sum + left_sum < 10) || (lower_sum + left_sum +
+                // upper_sum < 10);
 
+                if (is_caption &&
+                    br.height < multiplier * most_frequent_height) {
+                    ds.push_back(std::make_tuple(di.distance, pi, di.pos));
+                }
             }
         }
         if (ds.size() > 0) {
             std::sort(ds.begin(), ds.end());
-            std::tuple<double,int,Position> t = ds[0];
+            std::tuple<double, int, Position> t = ds[0];
             int pos = std::get<1>(t);
             if (std::get<0>(t) < multiplier * most_frequent_height) {
                 if (belongs.find(pos) == belongs.end()) {
@@ -552,12 +575,13 @@ std::map<int,std::vector<std::vector<int>>> detect_belonging_captions(cv::Mat& m
     return belongs;
 }
 
-void join_with_captions(std::map<int,std::vector<std::vector<int>>>& belongs, std::vector<cv::Rect>& rects, std::vector<cv::Rect>& output ) {
-
+void join_with_captions(std::map<int, std::vector<std::vector<int>>>& belongs,
+                        std::vector<cv::Rect>& rects,
+                        std::vector<cv::Rect>& output) {
     std::vector<cv::Rect> ret_val;
 
     std::vector<int> belong_keys;
-    for(auto const& itmap: belongs) {
+    for (auto const& itmap : belongs) {
         belong_keys.push_back(itmap.first);
     }
 
@@ -574,18 +598,17 @@ void join_with_captions(std::map<int,std::vector<std::vector<int>>>& belongs, st
             }
         }
         std::set<int> rect_inds;
-        for (int l=0;l<to_join.size();l++) {
+        for (int l = 0; l < to_join.size(); l++) {
             rect_inds.insert(l);
         }
 
-
         cv::Rect br = bounding_rect(rect_inds, to_join);
         ret_val.push_back(br);
-
     }
 
-    for (int i=0;i<rects.size(); i++) {
-        if (std::find(inds_to_ignore.begin(), inds_to_ignore.end(), i) == inds_to_ignore.end()) {
+    for (int i = 0; i < rects.size(); i++) {
+        if (std::find(inds_to_ignore.begin(), inds_to_ignore.end(), i) ==
+            inds_to_ignore.end()) {
             ret_val.push_back(rects[i]);
         }
     }
@@ -596,54 +619,54 @@ void join_with_captions(std::map<int,std::vector<std::vector<int>>>& belongs, st
     }
 }
 
-std::map<int,std::vector<std::vector<int>>> detect_captions(cv::Mat& mat, std::vector<cv::Rect>& joined_rects) {
-    std::map<int,std::vector<std::vector<int>>> belongs;
+std::map<int, std::vector<std::vector<int>>> detect_captions(
+    cv::Mat& mat, std::vector<cv::Rect>& joined_rects) {
+    std::map<int, std::vector<std::vector<int>>> belongs;
     double s = 0.0;
     int n = joined_rects.size();
     std::vector<int> pic_inds;
-    for (int i=0;i<n;i++) {
+    for (int i = 0; i < n; i++) {
         cv::Rect jr = joined_rects[i];
         s += jr.height;
     }
 
     double most_frequent_height = s / joined_rects.size();
-    for (int i=0;i<n;i++) {
+    for (int i = 0; i < n; i++) {
         cv::Rect jr = joined_rects[i];
-        if (jr.height > 7*most_frequent_height) {
+        if (jr.height > 7 * most_frequent_height) {
             pic_inds.push_back(i);
         }
     }
-    double* distmat = new double[(n*(n-1))/2];
+    double* distmat = new double[(n * (n - 1)) / 2];
     int i, k, j;
-    for (i=k=0; i<n; i++) {
-        for (j=i+1; j<n; j++) {
-        // compute distance between observables i and j  
-        double x1 = (joined_rects[i].x + joined_rects[i].width)/2;
-        double y1 = (joined_rects[i].y + joined_rects[i].height)/2;
-        double x2 = (joined_rects[j].x + joined_rects[j].width)/2;
-        double y2 = (joined_rects[j].y + joined_rects[j].height)/2;
-        distmat[k] = sqrt( (x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2) );
-        k++;
+    for (i = k = 0; i < n; i++) {
+        for (j = i + 1; j < n; j++) {
+            // compute distance between observables i and j
+            double x1 = (joined_rects[i].x + joined_rects[i].width) / 2;
+            double y1 = (joined_rects[i].y + joined_rects[i].height) / 2;
+            double x2 = (joined_rects[j].x + joined_rects[j].width) / 2;
+            double y2 = (joined_rects[j].y + joined_rects[j].height) / 2;
+            distmat[k] = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+            k++;
         }
     }
-    int* merge = new int[2*(n-1)];
-    double* height = new double[n-1];
+    int* merge = new int[2 * (n - 1)];
+    double* height = new double[n - 1];
     hclust_fast(n, distmat, HCLUST_METHOD_SINGLE, merge, height);
-
 
     int* labels = new int[n];
 
-    int last_cluster_count = std::numeric_limits<int>::max();   
+    int last_cluster_count = std::numeric_limits<int>::max();
     double x = 0.5;
-    while (x<=4) {
+    while (x <= 4) {
         double coef = x;
-        x+=0.1;
+        x += 0.1;
         cutree_cdist(n, merge, height, most_frequent_height * coef, labels);
 
-        std::map<int,std::vector<int>> res;
+        std::map<int, std::vector<int>> res;
         std::set<int> keys;
 
-        for (int t=0;t<n;t++) {
+        for (int t = 0; t < n; t++) {
             int key = labels[t];
             keys.insert(key);
             if (res.find(key) != res.end()) {
@@ -660,28 +683,25 @@ std::map<int,std::vector<std::vector<int>>> detect_captions(cv::Mat& mat, std::v
         std::vector<std::vector<int>> small_components;
 
         if (keys.size() == last_cluster_count) {
-
-
             for (auto key : keys) {
                 std::vector<int> sc = res[key];
                 if (sc.size() > 0 && sc.size() < 100) {
                     for (auto pi : pic_inds) {
-                        sc.erase(std::remove(sc.begin(), sc.end(), pi), sc.end());
+                        sc.erase(std::remove(sc.begin(), sc.end(), pi),
+                                 sc.end());
                     }
                     small_components.push_back(sc);
                 }
             }
 
-           belongs = detect_belonging_captions(mat, joined_rects, pic_inds, small_components, most_frequent_height, coef*3); 
-           break;
+            belongs = detect_belonging_captions(mat, joined_rects, pic_inds,
+                                                small_components,
+                                                most_frequent_height, coef * 3);
+            break;
         }
 
         last_cluster_count = keys.size();
-
-
     }
-
-
 
     delete[] distmat;
     delete[] merge;

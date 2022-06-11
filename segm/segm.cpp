@@ -198,9 +198,6 @@ static PyObject* get_word_limits(PyObject* self, PyObject *args)
     }
 
     return list;
-
-
-
 }
 
 static PyObject* get_bounding_rect(PyObject* self, PyObject *args)
@@ -424,7 +421,7 @@ static std::map<int,int> clusters(PyObject* input, PyArray_Descr* dtype)
     std::vector<cv::Rect> rects;
     std::vector<cv::Rect> joined_rects;
     std::set<std::array<int,4>> enclosing_rects;
-	cv::Mat mat;
+    cv::Mat mat;
     if (nd >= 2)
     {
         cv::Mat m = cv::Mat(cv::Size(dims[1], dims[0]), CV_8UC1, PyArray_DATA(contig));
@@ -449,7 +446,8 @@ static std::map<int,int> clusters(PyObject* input, PyArray_Descr* dtype)
             int area = rectComponents.at<int>(Point(4, i));
 
             Rect rectangle(x, y, w, h);
-            if (w > 20 * h || h > 20 * w) {
+            if (w > 20 * h || h > 20 * w)
+            {
                 continue;
             }
             rects.push_back(rectangle);
@@ -486,7 +484,7 @@ static std::map<int,int> clusters(PyObject* input, PyArray_Descr* dtype)
     Py_INCREF(dtype);
 
     std::vector<cv::Rect> new_rects;
-    double s = 0; 
+    double s = 0;
     for (auto it = enclosing_rects.begin(); it != enclosing_rects.end(); ++it)
     {
         array<int, 4> a = *it;
@@ -500,17 +498,19 @@ static std::map<int,int> clusters(PyObject* input, PyArray_Descr* dtype)
 
     double most_frequent_height = s / new_rects.size();
     int n = new_rects.size();
-     double* distmat = new double[(n*(n-1))/2];
+    double* distmat = new double[(n*(n-1))/2];
     int i, k, j;
-    for (i=k=0; i<n; i++) {
-        for (j=i+1; j<n; j++) {
-        // compute distance between observables i and j  
-        double x1 = (new_rects[i].x + new_rects[i].width)/2;
-        double y1 = (new_rects[i].y + new_rects[i].height)/2;
-        double x2 = (new_rects[j].x + new_rects[j].width)/2;
-        double y2 = (new_rects[j].y + new_rects[j].height)/2;
-        distmat[k] = sqrt( (x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2) );
-        k++;
+    for (i=k=0; i<n; i++)
+    {
+        for (j=i+1; j<n; j++)
+        {
+            // compute distance between observables i and j
+            double x1 = (new_rects[i].x + new_rects[i].width)/2;
+            double y1 = (new_rects[i].y + new_rects[i].height)/2;
+            double x2 = (new_rects[j].x + new_rects[j].width)/2;
+            double y2 = (new_rects[j].y + new_rects[j].height)/2;
+            distmat[k] = sqrt( (x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2) );
+            k++;
         }
     }
     int* merge = new int[2*(n-1)];
@@ -520,9 +520,10 @@ static std::map<int,int> clusters(PyObject* input, PyArray_Descr* dtype)
 
     int* labels = new int[n];
 
-    int last_cluster_count = std::numeric_limits<int>::max();   
+    int last_cluster_count = std::numeric_limits<int>::max();
     double x = 0.5;
-    while (x<=4) {
+    while (x<=4)
+    {
         double coef = x;
         x+=0.1;
         cutree_cdist(n, merge, height, most_frequent_height * coef, labels);
@@ -530,14 +531,18 @@ static std::map<int,int> clusters(PyObject* input, PyArray_Descr* dtype)
         std::map<int,std::vector<int>> res;
         std::set<int> keys;
 
-        for (int t=0;t<n;t++) {
+        for (int t=0; t<n; t++)
+        {
             int key = labels[t];
             keys.insert(key);
-            if (res.find(key) != res.end()) {
+            if (res.find(key) != res.end())
+            {
                 std::vector<int> v = res[key];
                 v.push_back(t);
                 res[key] = v;
-            } else {
+            }
+            else
+            {
                 std::vector<int> v;
                 v.push_back(t);
                 res[key] = v;
@@ -546,15 +551,17 @@ static std::map<int,int> clusters(PyObject* input, PyArray_Descr* dtype)
 
         std::vector<std::vector<int>> small_components;
 
-        if (keys.size() == last_cluster_count) {
-           break;
+        if (keys.size() == last_cluster_count)
+        {
+            break;
         }
 
         last_cluster_count = keys.size();
 
     }
     std::map<int,int> ret_val;
-    for (int i=0; i<n; i++) {
+    for (int i=0; i<n; i++)
+    {
         ret_val[i] = labels[i];
     }
 
@@ -578,7 +585,7 @@ static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype, b
     std::vector<cv::Rect> rects;
     std::vector<cv::Rect> joined_rects;
     std::set<std::array<int,4>> enclosing_rects;
-	cv::Mat mat;
+    cv::Mat mat;
     if (nd >= 2)
     {
         cv::Mat m = cv::Mat(cv::Size(dims[1], dims[0]), CV_8UC1, PyArray_DATA(contig));
@@ -652,14 +659,15 @@ static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype, b
     }
 
 
-    if (!do_captions) {
+    if (!do_captions)
+    {
         return new_rects;
     }
 
     auto belongs = detect_captions(mat, new_rects);
-    
-	std::vector<cv::Rect> rects_with_joined_captions;
-	join_with_captions(belongs, new_rects, rects_with_joined_captions);
+
+    std::vector<cv::Rect> rects_with_joined_captions;
+    join_with_captions(belongs, new_rects, rects_with_joined_captions);
 
     return rects_with_joined_captions;
 
