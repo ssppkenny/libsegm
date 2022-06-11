@@ -1,6 +1,7 @@
 #include "segmentation.h"
 
 #include "IntervalJoin.h"
+#include "RectJoin.h"
 
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, int>
     NeighborsGraph;
@@ -481,7 +482,7 @@ dist_info distance(std::vector<int>& sc, int pi, std::vector<cv::Rect>& jr) {
 
 }
 
-std::map<int,std::vector<std::vector<int>>> detect_belonging_captions(std::vector<cv::Rect>& jr, std::vector<int>& pic_inds, std::vector<std::vector<int>> small_components, double most_frequent_height, double multiplier) {
+std::map<int,std::vector<std::vector<int>>> detect_belonging_captions(cv::Mat& mat, std::vector<cv::Rect>& jr, std::vector<int>& pic_inds, std::vector<std::vector<int>> small_components, double most_frequent_height, double multiplier) {
     std::map<int, std::vector<std::vector<int>>> belongs;
     for (int k=0; k<small_components.size(); k++) {
         std::vector<std::tuple<double,int,Position>> ds;
@@ -490,14 +491,51 @@ std::map<int,std::vector<std::vector<int>>> detect_belonging_captions(std::vecto
             int pi = pic_inds[j];
             dist_info di = distance(sc, pi, jr);
             if (di.pos != Position::UNKNOWN) {
-                ds.push_back(std::make_tuple(di.distance, pi, di.pos));
+                // add check if there is nothing aroud this component
+				// create bounding rect for small components
+				
+				std::set<int> rect_inds;
+				std::vector<cv::Rect> to_join;
+				for (int l=0;l<sc.size();l++) {
+					rect_inds.insert(l);
+					to_join.push_back(jr[sc[l]]);
+				}
+
+				cv::Rect br = bounding_rect(rect_inds, to_join);
+				
+
+
+				int width = mat.cols;
+				int height = mat.rows;
+				int left = br.x - int(most_frequent_height) > 0 ? br.x - int(most_frequent_height) : 0;
+                int right = br.x + br.width + int(most_frequent_height) < width ?  br.x + br.width + int(most_frequent_height) : width - 1;
+
+				int upper = br.y - int(most_frequent_height) > 0 ? br.y - int(most_frequent_height) : 0;
+                int lower = br.y + br.height + int(most_frequent_height) < height ?  br.y + br.height + int(most_frequent_height) : height - 1;
+
+				int h = lower - upper;
+				int w = right - left;
+				cv::Rect outer = cv::Rect(left, upper, right - left, lower - upper);
+				cv::Mat m = mat(outer);
+
+				int outer_sum = cv::countNonZero(mat(outer));
+				int inner_sum = cv::countNonZero(mat(br));
+                int area = 2*(lower-upper)*most_frequent_height + 2*(right-left)*most_frequent_height - 4*most_frequent_height*most_frequent_height;
+				double ratio = (outer_sum - inner_sum)/(double)area;
+			
+				bool is_caption = (ratio < 0.1);
+				//bool is_caption = (left_sum + upper_sum + right_sum < 10) || (upper_sum + right_sum + lower_sum < 10) || (right_sum + lower_sum + left_sum < 10) || (lower_sum + left_sum + upper_sum < 10);
+
+				if (is_caption && br.height < multiplier * most_frequent_height) {
+					ds.push_back(std::make_tuple(di.distance, pi, di.pos));
+				}
+
             }
         }
         if (ds.size() > 0) {
             std::sort(ds.begin(), ds.end());
             std::tuple<double,int,Position> t = ds[0];
             int pos = std::get<1>(t);
-            printf("distance and limit value are %f, %f\n", std::get<0>(t), multiplier * most_frequent_height);
             if (std::get<0>(t) < multiplier * most_frequent_height) {
                 if (belongs.find(pos) == belongs.end()) {
                     std::vector<std::vector<int>> v;
@@ -513,7 +551,47 @@ std::map<int,std::vector<std::vector<int>>> detect_belonging_captions(std::vecto
     }
     return belongs;
 }
-std::map<int,std::vector<std::vector<int>>> detect_captions(std::vector<cv::Rect>& joined_rects) {
+
+void join_with_captions(std::map<int,std::vector<std::vector<int>>>& belongs, std::vector<cv::Rect>& rects, std::vector<cv::Rect>& output ) {
+
+    std::vector<int> belong_keys;
+    for(auto const& itmap: belongs) {
+        belong_keys.push_back(itmap.first);
+    }
+
+    std::vector<int> inds_to_ignore;
+    for (auto key : belong_keys) {
+        inds_to_ignore.push_back(key);
+        std::vector<std::vector<int>> small_components = belongs[key];
+        std::vector<cv::Rect> to_join;
+        to_join.push_back(rects[key]);
+        for (auto sc : small_components) {
+            for (auto ind : sc) {
+                inds_to_ignore.push_back(ind);
+                to_join.push_back(rects[ind]);
+            }
+        }
+        std::set<int> rect_inds;
+        for (int l=0;l<to_join.size();l++) {
+            rect_inds.insert(l);
+        }
+
+
+        cv::Rect br = bounding_rect(rect_inds, to_join);
+        output.push_back(br);
+
+    }
+
+    for (int i=0;i<rects.size(); i++) {
+        if (std::find(inds_to_ignore.begin(), inds_to_ignore.end(), i) == inds_to_ignore.end()) {
+            output.push_back(rects[i]);
+        }
+    }
+
+	output = join_rects(output);
+}
+
+std::map<int,std::vector<std::vector<int>>> detect_captions(cv::Mat& mat, std::vector<cv::Rect>& joined_rects) {
     std::map<int,std::vector<std::vector<int>>> belongs;
     double s = 0.0;
     int n = joined_rects.size();
@@ -578,35 +656,18 @@ std::map<int,std::vector<std::vector<int>>> detect_captions(std::vector<cv::Rect
 
         if (keys.size() == last_cluster_count) {
 
-            std::map<int,std::vector<int>> res1;
-            std::set<int> keys1;
-            cutree_k(n, merge, last_cluster_count, labels);
-            for (int t=0;t<n;t++) {
-                int key = labels[t];
-                keys1.insert(key);
-                if (res1.find(key) != res1.end()) {
-                    std::vector<int> v = res1[key];
-                    v.push_back(t);
-                    res1[key] = v;
-                } else {
-                    std::vector<int> v;
-                    v.push_back(t);
-                    res1[key] = v;
+
+            for (auto key : keys) {
+                std::vector<int> sc = res[key];
+                if (sc.size() > 0 && sc.size() < 100) {
+                    for (auto pi : pic_inds) {
+                        sc.erase(std::remove(sc.begin(), sc.end(), pi), sc.end());
+                    }
+                    small_components.push_back(sc);
                 }
             }
 
-
-            std::vector<std::vector<int>> small_components1;
-            for (auto key : keys1) {
-                std::vector<int> sc = res1[key];
-                if (sc.size() > 1 && sc.size() < 80) {
-                   small_components1.push_back(sc);
-                }
-            }
-
-           printf("small connected_components size is %d\n", small_components.size());
-           belongs = detect_belonging_captions(joined_rects, pic_inds, small_components1, most_frequent_height, coef*2.5); 
-           printf("belongs size is %d\n", belongs.size());
+           belongs = detect_belonging_captions(mat, joined_rects, pic_inds, small_components, most_frequent_height, coef*3); 
            break;
         }
 
@@ -614,8 +675,6 @@ std::map<int,std::vector<std::vector<int>>> detect_captions(std::vector<cv::Rect
 
 
     }
-
-    printf("cluster count %d\n", last_cluster_count);
 
 
 

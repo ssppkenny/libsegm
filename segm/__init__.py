@@ -42,3 +42,6 @@ def find_bounding_rects_for_words(words):
 
 def find_ordered_glyphs(joined_rects):
     return get_ordered_glyphs(joined_rects, joined_rects.dtype)
+
+def find_clusters(img):
+    return get_clusters(img, img.dtype)

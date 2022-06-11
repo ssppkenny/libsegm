@@ -411,7 +411,7 @@ static PyObject* get_joined_intervals(PyObject* self, PyObject *args)
 
 }
 
-static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype)
+static std::map<int,int> clusters(PyObject* input, PyArray_Descr* dtype)
 {
 
     int nd = PyArray_NDIM(input);
@@ -424,10 +424,165 @@ static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype)
     std::vector<cv::Rect> rects;
     std::vector<cv::Rect> joined_rects;
     std::set<std::array<int,4>> enclosing_rects;
+	cv::Mat mat;
     if (nd >= 2)
     {
         cv::Mat m = cv::Mat(cv::Size(dims[1], dims[0]), CV_8UC1, PyArray_DATA(contig));
-        cv::Mat mat= m.clone();
+        mat= m.clone();
+        threshold(mat, mat, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+
+        Mat labeled(mat.size(), mat.type());
+        Mat rectComponents = Mat::zeros(Size(0, 0), 0);
+        Mat centComponents = Mat::zeros(Size(0, 0), 0);
+        connectedComponentsWithStats(mat, labeled, rectComponents, centComponents);
+        int count = rectComponents.rows - 1;
+
+        std::vector<int> areas;
+        double sum_of_areas = 0.0;
+
+        for (int i = 1; i < rectComponents.rows; i++)
+        {
+            int x = rectComponents.at<int>(Point(0, i));
+            int y = rectComponents.at<int>(Point(1, i));
+            int w = rectComponents.at<int>(Point(2, i));
+            int h = rectComponents.at<int>(Point(3, i));
+            int area = rectComponents.at<int>(Point(4, i));
+
+            Rect rectangle(x, y, w, h);
+            if (w > 20 * h || h > 20 * w) {
+                continue;
+            }
+            rects.push_back(rectangle);
+            areas.push_back(area);
+            sum_of_areas += area;
+        }
+
+        double avg_area = sum_of_areas / count;
+
+        std::vector<cv::Rect> filtered_rects;
+        for (int i = 0; i<rects.size(); i++)
+        {
+            cv::Rect r = rects[i];
+            int area = areas[i];
+            if (area < avg_area / 10)
+            {
+                continue;
+            }
+            else
+            {
+                filtered_rects.push_back(r);
+            }
+        }
+
+        joined_rects = join_rects(filtered_rects);
+        Enclosure enc(joined_rects);
+        enclosing_rects = enc.solve();
+
+        Py_DECREF(contig);
+    }
+
+
+    Py_INCREF(input);
+    Py_INCREF(dtype);
+
+    std::vector<cv::Rect> new_rects;
+    double s = 0; 
+    for (auto it = enclosing_rects.begin(); it != enclosing_rects.end(); ++it)
+    {
+        array<int, 4> a = *it;
+        int x = -get<0>(a);
+        int y = -get<1>(a);
+        int width = get<2>(a) - x;
+        int height = get<3>(a) - y;
+        new_rects.push_back(cv::Rect(x,y,width,height));
+        s += height;
+    }
+
+    double most_frequent_height = s / new_rects.size();
+    int n = new_rects.size();
+     double* distmat = new double[(n*(n-1))/2];
+    int i, k, j;
+    for (i=k=0; i<n; i++) {
+        for (j=i+1; j<n; j++) {
+        // compute distance between observables i and j  
+        double x1 = (new_rects[i].x + new_rects[i].width)/2;
+        double y1 = (new_rects[i].y + new_rects[i].height)/2;
+        double x2 = (new_rects[j].x + new_rects[j].width)/2;
+        double y2 = (new_rects[j].y + new_rects[j].height)/2;
+        distmat[k] = sqrt( (x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2) );
+        k++;
+        }
+    }
+    int* merge = new int[2*(n-1)];
+    double* height = new double[n-1];
+    hclust_fast(n, distmat, HCLUST_METHOD_SINGLE, merge, height);
+
+
+    int* labels = new int[n];
+
+    int last_cluster_count = std::numeric_limits<int>::max();   
+    double x = 0.5;
+    while (x<=4) {
+        double coef = x;
+        x+=0.1;
+        cutree_cdist(n, merge, height, most_frequent_height * coef, labels);
+
+        std::map<int,std::vector<int>> res;
+        std::set<int> keys;
+
+        for (int t=0;t<n;t++) {
+            int key = labels[t];
+            keys.insert(key);
+            if (res.find(key) != res.end()) {
+                std::vector<int> v = res[key];
+                v.push_back(t);
+                res[key] = v;
+            } else {
+                std::vector<int> v;
+                v.push_back(t);
+                res[key] = v;
+            }
+        }
+
+        std::vector<std::vector<int>> small_components;
+
+        if (keys.size() == last_cluster_count) {
+           break;
+        }
+
+        last_cluster_count = keys.size();
+
+    }
+    std::map<int,int> ret_val;
+    for (int i=0; i<n; i++) {
+        ret_val[i] = labels[i];
+    }
+
+    delete[] distmat;
+    delete[] merge;
+    delete[] height;
+    delete[] labels;
+    return ret_val;
+
+}
+static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype, bool do_captions)
+{
+
+    int nd = PyArray_NDIM(input);
+    npy_intp* dims = PyArray_DIMS(input);
+
+    PyArrayObject* contig = (PyArrayObject*)PyArray_FromAny(input,
+                            dtype,
+                            1, 3, NPY_ARRAY_CARRAY, NULL);
+
+    std::vector<cv::Rect> rects;
+    std::vector<cv::Rect> joined_rects;
+    std::set<std::array<int,4>> enclosing_rects;
+	cv::Mat mat;
+    if (nd >= 2)
+    {
+        cv::Mat m = cv::Mat(cv::Size(dims[1], dims[0]), CV_8UC1, PyArray_DATA(contig));
+        mat= m.clone();
         threshold(mat, mat, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
 
         Mat labeled(mat.size(), mat.type());
@@ -496,47 +651,14 @@ static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype)
 
     }
 
-    auto belongs = detect_captions(new_rects);
-
-    std::vector<int> belong_keys;
-    for(auto const& itmap: belongs) {
-        belong_keys.push_back(itmap.first);
+    if (!do_captions) {
+        return new_rects;
     }
 
-    std::vector<int> inds_to_ignore;
-    std::vector<cv::Rect> rects_with_joined_captions;
-    for (auto key : belong_keys) {
-        printf("belongs key = %d\n", key);
-        inds_to_ignore.push_back(key);
-        std::vector<std::vector<int>> small_components = belongs[key];
-        std::vector<cv::Rect> to_join;
-        to_join.push_back(new_rects[key]);
-        for (auto sc : small_components) {
-            printf("small component size = %d\n", sc.size());
-            std::cout << "[";
-            for (auto ind : sc) {
-                std::cout << ind << ",";
-                inds_to_ignore.push_back(ind);
-                to_join.push_back(new_rects[ind]);
-            }
-            std::cout << "]\n";
-        }
-        std::set<int> rect_inds;
-        for (int l=0;l<to_join.size();l++) {
-            rect_inds.insert(l);
-        }
-
-
-        cv::Rect br = bounding_rect(rect_inds, to_join);
-        rects_with_joined_captions.push_back(br);
-
-    }
-
-    for (int i=0;i<new_rects.size(); i++) {
-        if (std::find(inds_to_ignore.begin(), inds_to_ignore.end(), i) == inds_to_ignore.end()) {
-            rects_with_joined_captions.push_back(new_rects[i]);
-        }
-    }
+    auto belongs = detect_captions(mat, new_rects);
+    
+	std::vector<cv::Rect> rects_with_joined_captions;
+	join_with_captions(belongs, new_rects, rects_with_joined_captions);
 
     return rects_with_joined_captions;
 
@@ -552,7 +674,7 @@ static PyObject* get_ordered_glyphs(PyObject* self, PyObject *args)
         return NULL;
     }
 
-    std::vector<cv::Rect> new_rects = join_rects(input, dtype);
+    std::vector<cv::Rect> new_rects = join_rects(input, dtype, true);
 
 
     std::vector<words_struct> lines_of_words = find_ordered_glyphs(new_rects);
@@ -592,6 +714,46 @@ static PyObject* get_ordered_glyphs(PyObject* self, PyObject *args)
 
 }
 
+static PyObject* get_clusters(PyObject* self, PyObject *args)
+{
+    PyObject *input;
+    PyArray_Descr *dtype = NULL;
+    if (!PyArg_ParseTuple(args, "OO&", &input, PyArray_DescrConverter, &dtype))
+    {
+        return NULL;
+    }
+
+    std::map<int,int> map = clusters(input, dtype);
+    std::vector<cv::Rect> new_rects = join_rects(input, dtype, false);
+
+    int N = new_rects.size();
+    PyObject* list = PyList_New(N);
+    for (int i = 0; i < N; ++i)
+    {
+        PyStructSequence* res = (PyStructSequence*) PyStructSequence_New(&GlyphResultType);
+        PyStructSequence_SET_ITEM(res, 0, PyLong_FromLong(new_rects[i].x));
+        PyStructSequence_SET_ITEM(res, 1, PyLong_FromLong(new_rects[i].y));
+        PyStructSequence_SET_ITEM(res, 2, PyLong_FromLong(new_rects[i].width));
+        PyStructSequence_SET_ITEM(res, 3, PyLong_FromLong(new_rects[i].height));
+        PyStructSequence_SET_ITEM(res, 4, PyLong_FromLong(0));
+        PyList_SetItem(list, i, (PyObject*)res);
+    }
+
+    PyObject *dict = PyDict_New();
+
+    for (auto it=map.begin(); it != map.end(); it++)
+    {
+        int k = it->first;
+        int v = it->second;
+
+        PyDict_SetItem(dict, PyLong_FromLong(k), PyLong_FromLong(v));
+    }
+
+    PyObject *tuple = PyTuple_New(2);
+    PyTuple_SetItem(tuple, 0, list);
+    PyTuple_SetItem(tuple, 1, dict);
+    return tuple;
+}
 
 static PyObject* get_joined_rects(PyObject* self, PyObject *args)
 {
@@ -602,7 +764,7 @@ static PyObject* get_joined_rects(PyObject* self, PyObject *args)
         return NULL;
     }
 
-    std::vector<cv::Rect> new_rects = join_rects(input, dtype);
+    std::vector<cv::Rect> new_rects = join_rects(input, dtype, true);
 
     int N = new_rects.size();
     PyObject* list = PyList_New(N);
@@ -684,6 +846,7 @@ static PyMethodDef method_table[] =
     {"get_grouped_glyphs", (PyCFunction) get_grouped_glyphs, METH_VARARGS, "gets grouped glyphs"},
     {"get_bounding_rects_for_words", (PyCFunction) get_bounding_rects_for_words, METH_VARARGS, "gets bounding rects for words"},
     {"get_ordered_glyphs", (PyCFunction) get_ordered_glyphs, METH_VARARGS, "gets ordered glyphs"},
+    {"get_clusters", (PyCFunction) get_clusters, METH_VARARGS, "gets clusters"},
     {NULL, NULL, 0, NULL} // Sentinel value ending the table
 };
 

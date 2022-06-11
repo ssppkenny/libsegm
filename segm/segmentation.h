@@ -28,9 +28,11 @@ dist_info dist_rects(cv::Rect& r1, cv::Rect& r2);
 
 dist_info distance(std::vector<int>& sc, int pi, std::vector<cv::Rect>& jr);
 
-std::map<int,std::vector<std::vector<int>>> detect_belonging_captions(std::vector<cv::Rect>& jr, std::vector<int>& pic_inds, std::vector<std::vector<int>> small_components, double most_frequent_height, double multiplier);
+std::map<int,std::vector<std::vector<int>>> detect_belonging_captions(cv::Mat& mat, std::vector<cv::Rect>& jr, std::vector<int>& pic_inds, std::vector<std::vector<int>> small_components, double most_frequent_height, double multiplier);
 
-std::map<int,std::vector<std::vector<int>>> detect_captions(std::vector<cv::Rect>& joined_rects);
+void join_with_captions(std::map<int,std::vector<std::vector<int>>>& belongs, std::vector<cv::Rect>& rects, std::vector<cv::Rect>& output );
+
+std::map<int,std::vector<std::vector<int>>> detect_captions(cv::Mat& mat, std::vector<cv::Rect>& joined_rects);
 
 std::vector<words_struct> find_ordered_glyphs(
     std::vector<cv::Rect>& joined_rects);
