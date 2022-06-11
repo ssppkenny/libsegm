@@ -554,6 +554,8 @@ std::map<int,std::vector<std::vector<int>>> detect_belonging_captions(cv::Mat& m
 
 void join_with_captions(std::map<int,std::vector<std::vector<int>>>& belongs, std::vector<cv::Rect>& rects, std::vector<cv::Rect>& output ) {
 
+    std::vector<cv::Rect> ret_val;
+
     std::vector<int> belong_keys;
     for(auto const& itmap: belongs) {
         belong_keys.push_back(itmap.first);
@@ -578,17 +580,20 @@ void join_with_captions(std::map<int,std::vector<std::vector<int>>>& belongs, st
 
 
         cv::Rect br = bounding_rect(rect_inds, to_join);
-        output.push_back(br);
+        ret_val.push_back(br);
 
     }
 
     for (int i=0;i<rects.size(); i++) {
         if (std::find(inds_to_ignore.begin(), inds_to_ignore.end(), i) == inds_to_ignore.end()) {
-            output.push_back(rects[i]);
+            ret_val.push_back(rects[i]);
         }
     }
 
-	output = join_rects(output);
+    std::vector<cv::Rect> new_rects = join_rects(ret_val);
+    for (auto r : new_rects) {
+        output.push_back(r);
+    }
 }
 
 std::map<int,std::vector<std::vector<int>>> detect_captions(cv::Mat& mat, std::vector<cv::Rect>& joined_rects) {

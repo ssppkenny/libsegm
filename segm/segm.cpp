@@ -651,6 +651,8 @@ static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype, b
 
     }
 
+    printf("rects count = %d\n", new_rects.size());
+
     if (!do_captions) {
         return new_rects;
     }
@@ -659,6 +661,7 @@ static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype, b
     
 	std::vector<cv::Rect> rects_with_joined_captions;
 	join_with_captions(belongs, new_rects, rects_with_joined_captions);
+    printf("rects joined with captions count = %d\n", rects_with_joined_captions.size());
 
     return rects_with_joined_captions;
 
