@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import pytest
 
+
 def test_find_ordered_glyphs():
     img = cv2.imread('vd_p214.png', cv2.IMREAD_GRAYSCALE)
     lines_of_words = find_ordered_glyphs(img)

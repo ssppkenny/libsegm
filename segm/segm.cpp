@@ -603,9 +603,9 @@ static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype, b
             int area = rectComponents.at<int>(Point(4, i));
 
             Rect rectangle(x, y, w, h);
-            if (w > 20 * h || h > 20 * w) {
-                continue;
-            }
+            //if (w > 20 * h || h > 20 * w) {
+            //    continue;
+            //}
             rects.push_back(rectangle);
             areas.push_back(area);
             sum_of_areas += area;
@@ -674,7 +674,7 @@ static PyObject* get_ordered_glyphs(PyObject* self, PyObject *args)
         return NULL;
     }
 
-    std::vector<cv::Rect> new_rects = join_rects(input, dtype, true);
+    std::vector<cv::Rect> new_rects = join_rects(input, dtype, false);
 
 
     std::vector<words_struct> lines_of_words = find_ordered_glyphs(new_rects);
