@@ -3,6 +3,48 @@
 #include "IntervalJoin.h"
 #include "RectJoin.h"
 
+
+double findMedian(vector<int> a)
+{
+    int n = a.size();
+  
+    // If size of the arr[] is even
+    if (n % 2 == 0) {
+  
+        // Applying nth_element
+        // on n/2th index
+        nth_element(a.begin(),
+                    a.begin() + n / 2,
+                    a.end());
+  
+        // Applying nth_element
+        // on (n-1)/2 th index
+        nth_element(a.begin(),
+                    a.begin() + (n - 1) / 2,
+                    a.end());
+  
+        // Find the average of value at
+        // index N/2 and (N-1)/2
+        return (double)(a[(n - 1) / 2]
+                        + a[n / 2])
+               / 2.0;
+    }
+  
+    // If size of the arr[] is odd
+    else {
+  
+        // Applying nth_element
+        // on n/2
+        nth_element(a.begin(),
+                    a.begin() + n / 2,
+                    a.end());
+  
+        // Value at index (N/2)th
+        // is the median
+        return (double)a[n / 2];
+    }
+}
+
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, int>
     NeighborsGraph;
 
@@ -513,43 +555,76 @@ std::map<int, std::vector<std::vector<int>>> detect_belonging_captions(
 
                 cv::Rect br = bounding_rect(rect_inds, to_join);
 
+                int left_count = 0;
+                int right_count = 0;
+
+
                 int width = mat.cols;
                 int height = mat.rows;
-                int left = br.x - int(most_frequent_height) > 0
-                               ? br.x - int(most_frequent_height)
+                int extension = 3 * most_frequent_height; //(int)(most_frequent_height / 2);
+                int left = br.x - extension > 0
+                               ? br.x - extension
                                : 0;
-                int right = br.x + br.width + int(most_frequent_height) < width
-                                ? br.x + br.width + int(most_frequent_height)
+                int right = br.x + br.width + extension < width
+                                ? br.x + br.width + extension
                                 : width - 1;
 
-                int upper = br.y - int(most_frequent_height) > 0
-                                ? br.y - int(most_frequent_height)
+                int upper = br.y - extension > 0
+                                ? br.y - extension
                                 : 0;
                 int lower =
-                    br.y + br.height + int(most_frequent_height) < height
-                        ? br.y + br.height + int(most_frequent_height)
+                    br.y + br.height + extension < height
+                        ? br.y + br.height + extension
                         : height - 1;
 
-                int h = lower - upper;
-                int w = right - left;
-                cv::Rect outer =
-                    cv::Rect(left, upper, right - left, lower - upper);
-                cv::Mat m = mat(outer);
 
-                int outer_sum = cv::countNonZero(mat(outer));
-                int inner_sum = cv::countNonZero(mat(br));
-                int area = 2 * (lower - upper) * most_frequent_height +
-                           2 * (right - left) * most_frequent_height -
-                           4 * most_frequent_height * most_frequent_height;
-                double ratio = (outer_sum - inner_sum) / (double)area;
+                for (int t=0; t<jr.size(); t++) {
+                    double a = jr[t].x + jr[t].width / 2.0;
+                    double b = jr[t].y + jr[t].height / 2.0;
+                    if ((a >= left) && (a <= br.x) && (b >= br.y) && (b <= br.y + br.height)) {
+                        left_count++;
+                    }
 
-                bool is_caption = (ratio < 0.1);
+                    if ((a >= br.x + br.width) && (a <= right) && (b >= br.y) && (b <= br.y + br.height)) {
+                        right_count++;
+                    }
+
+                }
+
+                bool is_caption = left_count == 0 && right_count == 0;//(ratio < 0.008);
+
                 // bool is_caption = (left_sum + upper_sum + right_sum < 10) ||
                 // (upper_sum + right_sum + lower_sum < 10) || (right_sum +
                 // lower_sum + left_sum < 10) || (lower_sum + left_sum +
                 // upper_sum < 10);
+                //
+                cv::Rect picture_rect = jr[pi];
+                int x1 = picture_rect.x;
+                int x2 = picture_rect.x + picture_rect.width;
 
-                if (is_caption &&
+                bool passes_horizontally = (abs(br.x - x1) + abs(br.x + br.width - x2) < picture_rect.width ) || (br.x <= x1 && br.x + br.width >= x2) || (br.x >= x1 && br.x + br.width <= x2);
+                
+                bool is_line = sc.size() < 5 && ((br.width / (double)(br.height) > 25) || (br.height / (double)(br.width) > 25));
+
+                bool cond = passes_horizontally && !is_line && is_caption &&
+                    br.height < multiplier * most_frequent_height;
+
+
+
+               // if (sc.size() == 4) {
+              //      printf("picture rect %d %d %d %d\n", jr[pi].x, jr[pi].y, jr[pi].width, jr[pi].height);
+              //      printf("size and cond %d, %d\n", sc.size(), cond);
+              //      printf("left count and right count %d, %d\n", left_count, right_count);
+              //      printf("extension %d\n", extension);
+              //      printf("passes_horizontally %d\n", passes_horizontally);
+              //      printf("is_line %d\n", is_line);
+              //      printf("is_caption %d\n", is_caption);
+              //      printf("br is %d %d %d %d\n", br.x, br.y, br.width, br.height);
+              //      printf("br.height < multiplier * most_frequent_height%d\n", br.height < multiplier * most_frequent_height);
+
+                //}
+
+                if (passes_horizontally && !is_line && is_caption &&
                     br.height < multiplier * most_frequent_height) {
                     ds.push_back(std::make_tuple(di.distance, pi, di.pos));
                 }
@@ -625,12 +700,18 @@ std::map<int, std::vector<std::vector<int>>> detect_captions(
     double s = 0.0;
     int n = joined_rects.size();
     std::vector<int> pic_inds;
+    std::vector<int> heights;
     for (int i = 0; i < n; i++) {
         cv::Rect jr = joined_rects[i];
         s += jr.height;
+        heights.push_back(jr.height);
     }
 
+    //double med = findMedian(heights);
+    //printf("median height = %f\n", med);
+
     double most_frequent_height = s / joined_rects.size();
+    //printf("most frequent height = %f\n", most_frequent_height);
     for (int i = 0; i < n; i++) {
         cv::Rect jr = joined_rects[i];
         if (jr.height > 7 * most_frequent_height) {
@@ -685,18 +766,19 @@ std::map<int, std::vector<std::vector<int>>> detect_captions(
         if (keys.size() == last_cluster_count) {
             for (auto key : keys) {
                 std::vector<int> sc = res[key];
+                for (auto pi : pic_inds) {
+                    sc.erase(std::remove(sc.begin(), sc.end(), pi),
+                             sc.end());
+                }
                 if (sc.size() > 0 && sc.size() < 100) {
-                    for (auto pi : pic_inds) {
-                        sc.erase(std::remove(sc.begin(), sc.end(), pi),
-                                 sc.end());
-                    }
                     small_components.push_back(sc);
                 }
             }
 
+
             belongs = detect_belonging_captions(mat, joined_rects, pic_inds,
                                                 small_components,
-                                                most_frequent_height, coef * 3);
+                                                most_frequent_height, coef * 6);
             break;
         }
 

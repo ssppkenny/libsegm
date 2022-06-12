@@ -446,7 +446,7 @@ static std::map<int,int> clusters(PyObject* input, PyArray_Descr* dtype)
             int area = rectComponents.at<int>(Point(4, i));
 
             Rect rectangle(x, y, w, h);
-            if (w > 20 * h || h > 20 * w)
+            if (w > 25 * h || h > 25 * w)
             {
                 continue;
             }
@@ -521,7 +521,9 @@ static std::map<int,int> clusters(PyObject* input, PyArray_Descr* dtype)
     int* labels = new int[n];
 
     int last_cluster_count = std::numeric_limits<int>::max();
+    int count = 0;
     double x = 0.5;
+    std::vector<int> cluster_sizes;
     while (x<=4)
     {
         double coef = x;
@@ -550,11 +552,14 @@ static std::map<int,int> clusters(PyObject* input, PyArray_Descr* dtype)
         }
 
         std::vector<std::vector<int>> small_components;
+        int n = cluster_sizes.size();
+        cluster_sizes.push_back(keys.size());
 
-        if (keys.size() == last_cluster_count)
+        if (n > 1 && (cluster_sizes[n-1] == cluster_sizes[n-2]))  
         {
-            break;
+                break;
         }
+
 
         last_cluster_count = keys.size();
 
@@ -610,9 +615,9 @@ static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype, b
             int area = rectComponents.at<int>(Point(4, i));
 
             Rect rectangle(x, y, w, h);
-            //if (w > 20 * h || h > 20 * w) {
-            //    continue;
-            //}
+            if (w > 25 * h || h > 25 * w) {
+                continue;
+            }
             rects.push_back(rectangle);
             areas.push_back(area);
             sum_of_areas += area;
