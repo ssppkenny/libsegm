@@ -1,11 +1,19 @@
 from ._segm import *
 
+class SegmentationException(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
 def find_glyphs(img):
     return get_glyphs(img, img.dtype)
 
 
 def join_rects(img):
-    return get_joined_rects(img, img.dtype)
+    if not img is None:
+        return get_joined_rects(img, img.dtype)
+    else:
+        raise SegmentationException("image should not be empty")
 
 
 def join_intervals(intervals):
@@ -38,6 +46,15 @@ def find_grouped_glyphs(glyphs):
 
 def find_bounding_rects_for_words(words):
     return get_bounding_rects_for_words(words)
+
+
+def reflow_image(factor, zoom_factor, img):
+    """
+    factor is multiplier for the new page width
+    zoom_factor is an image zoom
+    img is an nxm numpy array representing an image 
+    """
+    return get_reflowed_image(factor, zoom_factor, img, img.dtype)
 
 
 def find_ordered_glyphs(joined_rects):

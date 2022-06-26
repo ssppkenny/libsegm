@@ -1,8 +1,15 @@
-from segm import join_rects, join_intervals, glyph_result, find_neighbors, find_baseline, find_grouped_glyphs as group_glyphs, find_ordered_glyphs
+from segm import join_rects, join_intervals, glyph_result, find_neighbors, find_baseline, find_grouped_glyphs as group_glyphs, find_ordered_glyphs, reflow_image
 import cv2
 import numpy as np
 import pytest
 
+
+def test_reflow_image():
+    img = cv2.imread('vd_p214.png', cv2.IMREAD_GRAYSCALE)
+    zoom_factor = 2
+    factor = 1.5
+    new_img = reflow_image(factor, zoom_factor, img)
+    assert new_img.shape == (10154, 5960)
 
 def test_find_ordered_glyphs():
     img = cv2.imread('vd_p214.png', cv2.IMREAD_GRAYSCALE)

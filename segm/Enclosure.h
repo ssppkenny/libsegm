@@ -9,7 +9,7 @@ struct ArrayOrder
 {
     explicit ArrayOrder(int i) : i(i) {}
 
-    virtual bool operator()(array<int, 4> const &lhs, array<int, 4> const &rhs) const = 0;
+    virtual bool operator()(std::array<int, 4> const &lhs, std::array<int, 4> const &rhs) const = 0;
 
 protected:
     int i;
@@ -17,9 +17,9 @@ protected:
 
 struct TupleOrder
 {
-    bool operator()(std::tuple<array<int, 4>, char> const &lhs, std::tuple<array<int, 4>, char> const &rhs) const
+    bool operator()(std::tuple<std::array<int, 4>, char> const &lhs, std::tuple<std::array<int, 4>, char> const &rhs) const
     {
-        return get<0>(lhs)[2] > get<0>(rhs)[2];
+        return std::get<0>(lhs)[2] > std::get<0>(rhs)[2];
     }
 };
 
@@ -27,7 +27,7 @@ struct CustomLessThan : public ArrayOrder
 {
     CustomLessThan(int i) : ArrayOrder(i) {}
 
-    bool operator()(array<int, 4> const &lhs, array<int, 4> const &rhs) const
+    bool operator()(std::array<int, 4> const &lhs, std::array<int, 4> const &rhs) const
     {
         return lhs[i] < rhs[i];
     }
@@ -37,26 +37,26 @@ struct CustomLessThan : public ArrayOrder
 class Enclosure
 {
 public:
-    Enclosure(vector<array<int, 4>>& points);
-    Enclosure(vector<Rect>& rects);
+    Enclosure(std::vector<std::array<int, 4>>& points);
+    Enclosure(std::vector<Rect>& rects);
 
-    set<array<int, 4>> solve();
+    std::set<std::array<int, 4>> solve();
 
     virtual ~Enclosure();
 
 private:
-    vector<array<int, 4>> points;
-    set<array<int, 4>> all_;
-    map<int,map<int, int>> elementsMap;
-    map<int, vector<int>> mapNumberToPos;
+    std::vector<std::array<int, 4>> points;
+    std::set<std::array<int, 4>> all_;
+    std::map<int,std::map<int, int>> elementsMap;
+    std::map<int, std::vector<int>> mapNumberToPos;
 
     void normalize();
 
-    vector<std::tuple<array<int, 4>, array<int, 4>>> report(vector<array<int, 4>>);
+    std::vector<std::tuple<std::array<int, 4>, std::array<int, 4>>> report(std::vector<std::array<int, 4>>);
 
-    vector<std::tuple<array<int, 4>, array<int, 4>>> merge(vector<array<int, 4>>, vector<array<int, 4>>);
+    std::vector<std::tuple<std::array<int, 4>, std::array<int, 4>>> merge(std::vector<std::array<int, 4>>, std::vector<std::array<int, 4>>);
 
-    inline float getMedian(vector<array<int, 4>> points)
+    inline float getMedian(std::vector<std::array<int, 4>> points)
     {
         sort(points.begin(), points.end(), CustomLessThan(3));
         float med = 0.0;

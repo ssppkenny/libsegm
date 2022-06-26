@@ -5,9 +5,22 @@
 #include "fastcluster.h"
 #include "interval_tree.hpp"
 
+struct glyph_result {
+    int x;
+    int y;
+    int width;
+    int height;
+    int shift;
+};
+
 struct words_struct {
     double lower;
     std::vector<std::vector<cv::Rect>> words;
+};
+
+struct Word {
+    std::vector<glyph_result> glyphs;
+    glyph_result bounding_rect;
 };
 
 enum Position { LEFT = 1, RIGHT, BOTTOM, UP, UNKNOWN };
@@ -34,8 +47,16 @@ void join_with_captions(std::map<int, std::vector<std::vector<int>>>& belongs,
                         std::vector<cv::Rect>& rects,
                         std::vector<cv::Rect>& output);
 
+
+std::vector<std::vector<std::tuple<Word, double>>> split_paragraph(std::vector<std::tuple<Word, double>>& tp, int width);
+
+std::vector<std::tuple<Word, double>> transform_paragraph(std::vector<std::vector<std::vector<glyph_result>>>& p, std::vector<double>& indents, int gap_width, int par_num);
+
 std::map<int, std::vector<std::vector<int>>> detect_captions(
     cv::Mat& mat, std::vector<cv::Rect>& joined_rects);
+
+cv::Mat find_reflowed_image(
+    std::vector<cv::Rect>& joined_rects, float factor, float zoom_factor, cv::Mat& mat);
 
 std::vector<words_struct> find_ordered_glyphs(
     std::vector<cv::Rect>& joined_rects);

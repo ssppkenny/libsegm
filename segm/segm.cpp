@@ -5,13 +5,16 @@
 
 #include <structmember.h>
 #include <structseq.h>
-
+#include <boost/python.hpp>
 
 #include "PageSegmenter.h"
 #include "Enclosure.h"
 #include "RectJoin.h"
 #include "IntervalJoin.h"
 #include "segmentation.h"
+
+
+namespace bp = boost::python;
 
 static PyTypeObject GlyphResultType = {0, 0, 0, 0, 0, 0};
 
@@ -487,11 +490,11 @@ static std::map<int,int> clusters(PyObject* input, PyArray_Descr* dtype)
     double s = 0;
     for (auto it = enclosing_rects.begin(); it != enclosing_rects.end(); ++it)
     {
-        array<int, 4> a = *it;
-        int x = -get<0>(a);
-        int y = -get<1>(a);
-        int width = get<2>(a) - x;
-        int height = get<3>(a) - y;
+        std::array<int, 4> a = *it;
+        int x = -std::get<0>(a);
+        int y = -std::get<1>(a);
+        int width = std::get<2>(a) - x;
+        int height = std::get<3>(a) - y;
         new_rects.push_back(cv::Rect(x,y,width,height));
         s += height;
     }
@@ -654,11 +657,11 @@ static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype, b
     std::vector<cv::Rect> new_rects;
     for (auto it = enclosing_rects.begin(); it != enclosing_rects.end(); ++it)
     {
-        array<int, 4> a = *it;
-        int x = -get<0>(a);
-        int y = -get<1>(a);
-        int width = get<2>(a) - x;
-        int height = get<3>(a) - y;
+        std::array<int, 4> a = *it;
+        int x = -std::get<0>(a);
+        int y = -std::get<1>(a);
+        int width = std::get<2>(a) - x;
+        int height = std::get<3>(a) - y;
         new_rects.push_back(cv::Rect(x,y,width,height));
 
     }
@@ -675,6 +678,45 @@ static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype, b
     join_with_captions(belongs, new_rects, rects_with_joined_captions);
 
     return rects_with_joined_captions;
+
+}
+
+static PyObject* get_reflowed_image(PyObject* self, PyObject *args)
+{
+    PyObject *input;
+    PyArray_Descr *dtype = NULL;
+    float factor = 1.0f;
+    float zoom_factor = 1.0f;
+    if (!PyArg_ParseTuple(args, "ffOO&", &factor, &zoom_factor, &input, PyArray_DescrConverter, &dtype))
+    {
+        return NULL;
+    }
+
+    std::vector<cv::Rect> new_rects = join_rects(input, dtype, false);
+
+    int nd = PyArray_NDIM(input);
+    npy_intp* dims = PyArray_DIMS(input);
+
+    PyArrayObject* contig = (PyArrayObject*)PyArray_FromAny(input,
+                            dtype,
+                            1, 3, NPY_ARRAY_CARRAY, NULL);
+
+    cv::Mat mat = cv::Mat(cv::Size(dims[1], dims[0]), CV_8UC1, PyArray_DATA(contig));
+    cv::Mat new_image = find_reflowed_image(new_rects, factor, zoom_factor, mat);
+
+    cv::Size s = new_image.size();
+      const unsigned int nElem = s.height * s.width;
+      uchar* m = new uchar[nElem];
+      std::memcpy(m, new_image.data, nElem * sizeof(uchar));
+
+      npy_intp mdim[] = { s.height, s.width };
+      PyObject* img = PyArray_SimpleNewFromData(2, mdim, NPY_UINT8, (void*) m);
+
+      PyObject* ret_val = Py_BuildValue("O", img, s.height, s.width);
+
+      delete[] m;
+    
+    return ret_val;
 
 }
 
@@ -860,6 +902,7 @@ static PyMethodDef method_table[] =
     {"get_grouped_glyphs", (PyCFunction) get_grouped_glyphs, METH_VARARGS, "gets grouped glyphs"},
     {"get_bounding_rects_for_words", (PyCFunction) get_bounding_rects_for_words, METH_VARARGS, "gets bounding rects for words"},
     {"get_ordered_glyphs", (PyCFunction) get_ordered_glyphs, METH_VARARGS, "gets ordered glyphs"},
+    {"get_reflowed_image", (PyCFunction) get_reflowed_image, METH_VARARGS, "gets reflowed image"},
     {"get_clusters", (PyCFunction) get_clusters, METH_VARARGS, "gets clusters"},
     {NULL, NULL, 0, NULL} // Sentinel value ending the table
 };
@@ -877,6 +920,7 @@ static struct PyModuleDef segm_module_def =
 // The module init function
 PyMODINIT_FUNC PyInit__segm(void)
 {
+    //Py_Initialize();
     import_array();
 
     PyObject *mod = PyModule_Create(&segm_module_def);

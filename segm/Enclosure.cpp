@@ -5,30 +5,30 @@ Enclosure::~Enclosure()
 
 }
 
-vector<std::tuple<array<int, 4>, array<int, 4>>>
-Enclosure::merge(vector<array<int, 4>> s1, vector<array<int, 4>> s2)
+    std::vector<std::tuple<std::array<int, 4>, std::array<int, 4>>>
+Enclosure::merge(std::vector<std::array<int, 4>> s1, std::vector<std::array<int, 4>> s2)
 {
     sort(s1.begin(), s1.end(), CustomLessThan(2));
     sort(s2.begin(), s2.end(), CustomLessThan(2));
 
-    vector<std::tuple<array<int, 4>, char>> new_s1;
-    vector<std::tuple<array<int, 4>, char>> new_s2;
+    std::vector<std::tuple<std::array<int, 4>, char>> new_s1;
+    std::vector<std::tuple<std::array<int, 4>, char>> new_s2;
 
     for (int i = 0; i < s1.size(); i++)
     {
-        new_s1.push_back(std::tuple<array<int, 4>, char>(s1[i], 'r'));
+        new_s1.push_back(std::tuple<std::array<int, 4>, char>(s1[i], 'r'));
     }
 
     for (int i = 0; i < s2.size(); i++)
     {
-        new_s2.push_back(std::tuple<array<int, 4>, char>(s2[i], 'b'));
+        new_s2.push_back(std::tuple<std::array<int, 4>, char>(s2[i], 'b'));
     }
 
-    vector<std::tuple<array<int, 4>, char>> all_s;
+    std::vector<std::tuple<std::array<int, 4>, char>> all_s;
 
-    vector<array<int, 4>> heap;
+    std::vector<std::array<int, 4>> heap;
 
-    vector<std::tuple<array<int, 4>, array<int, 4>>> ret;
+    std::vector<std::tuple<std::array<int, 4>, std::array<int, 4>>> ret;
 
     all_s.reserve(new_s1.size() + new_s2.size());
     all_s.insert(all_s.end(), new_s1.begin(), new_s1.end());
@@ -39,17 +39,17 @@ Enclosure::merge(vector<array<int, 4>> s1, vector<array<int, 4>> s2)
     {
         if (get<1>(all_s[i]) == 'b')
         {
-            heap.push_back(get<0>(all_s[i]));
+            heap.push_back(std::get<0>(all_s[i]));
         }
         else
         {
-            array<int, 4> se = get<0>(all_s[i]);
+            std::array<int, 4> se = std::get<0>(all_s[i]);
             for (int j = 0; j < heap.size(); j++)
             {
-                array<int, 4> e = heap[j];
+                std::array<int, 4> e = heap[j];
                 if (e[0] >= se[0] && e[1] >= se[1])
                 {
-                    ret.push_back(std::tuple<array<int, 4>, array<int, 4>>(se, e));
+                    ret.push_back(std::tuple<std::array<int, 4>, std::array<int, 4>>(se, e));
                 }
             }
         }
@@ -58,29 +58,29 @@ Enclosure::merge(vector<array<int, 4>> s1, vector<array<int, 4>> s2)
     return ret;
 };
 
-vector<std::tuple<array<int, 4>, array<int, 4>>> Enclosure::report(vector<array<int, 4>> points)
+std::vector<std::tuple<std::array<int, 4>, std::array<int, 4>>> Enclosure::report(std::vector<std::array<int, 4>> points)
 {
     size_t size = points.size();
     if (size <= 1)
     {
-        vector<std::tuple<array<int, 4>, array<int, 4>>> v;
+        std::vector<std::tuple<std::array<int, 4>, std::array<int, 4>>> v;
         return v;
     }
     else if (size == 2)
     {
-        vector<std::tuple<array<int, 4>, array<int, 4>>> v;
-        array<int, 4> a = points[0];
-        array<int, 4> b = points[1];
-        if (get<0>(a) < get<0>(b) && get<1>(a) < get<1>(b) && get<2>(a) < get<2>(b) &&
-                get<3>(a) < get<3>(b))
+        vector<std::tuple<array<int, 4>, std::array<int, 4>>> v;
+        std::array<int, 4> a = points[0];
+        std::array<int, 4> b = points[1];
+        if (std::get<0>(a) < std::get<0>(b) && std::get<1>(a) < std::get<1>(b) && std::get<2>(a) < std::get<2>(b) &&
+                std::get<3>(a) < std::get<3>(b))
         {
-            v.push_back(std::tuple<array<int, 4>, array<int, 4>>(a, b));
+            v.push_back(std::tuple<std::array<int, 4>, std::array<int, 4>>(a, b));
             return v;
         }
-        else if (get<0>(a) >= get<0>(b) && get<1>(a) >= get<1>(b) && get<2>(a) >= get<2>(b) &&
-                 get<3>(a) >= get<3>(b))
+        else if (std::get<0>(a) >= std::get<0>(b) && std::get<1>(a) >= std::get<1>(b) && std::get<2>(a) >= std::get<2>(b) &&
+                 std::get<3>(a) >= std::get<3>(b))
         {
-            v.push_back(std::tuple<array<int, 4>, array<int, 4>>(b, a));
+            v.push_back(std::tuple<std::array<int, 4>, std::array<int, 4>>(b, a));
             return v;
         }
         else
@@ -90,42 +90,42 @@ vector<std::tuple<array<int, 4>, array<int, 4>>> Enclosure::report(vector<array<
     }
     else if (size == 3)
     {
-        vector<std::tuple<array<int, 4>, array<int, 4>>> v;
-        array<int, 4> a = points[0];
-        array<int, 4> b = points[1];
-        array<int, 4> c = points[2];
+        std::vector<std::tuple<std::array<int, 4>, std::array<int, 4>>> v;
+        std::array<int, 4> a = points[0];
+        std::array<int, 4> b = points[1];
+        std::array<int, 4> c = points[2];
 
-        if (get<0>(a) < get<0>(b) && get<1>(a) < get<1>(b) && get<2>(a) < get<2>(b) &&
-                get<3>(a) < get<3>(b))
+        if (std::get<0>(a) < std::get<0>(b) && std::get<1>(a) < std::get<1>(b) && std::get<2>(a) < std::get<2>(b) &&
+                std::get<3>(a) < std::get<3>(b))
         {
-            v.push_back(std::tuple<array<int, 4>, array<int, 4>>(a, b));
+            v.push_back(std::tuple<std::array<int, 4>, std::array<int, 4>>(a, b));
         }
-        else if (get<0>(a) >= get<0>(b) && get<1>(a) >= get<1>(b) && get<2>(a) >= get<2>(b) &&
-                 get<3>(a) >= get<3>(b))
+        else if (std::get<0>(a) >= std::get<0>(b) && std::get<1>(a) >= std::get<1>(b) && std::get<2>(a) >= std::get<2>(b) &&
+                 std::get<3>(a) >= std::get<3>(b))
         {
-            v.push_back(std::tuple<array<int, 4>, array<int, 4>>(b, a));
-        }
-
-        if (get<0>(a) < get<0>(c) && get<1>(a) < get<1>(c) && get<2>(a) < get<2>(c) &&
-                get<3>(a) < get<3>(c))
-        {
-            v.push_back(std::tuple<array<int, 4>, array<int, 4>>(a, c));
-        }
-        else if (get<0>(a) >= get<0>(c) && get<1>(a) >= get<1>(c) && get<2>(a) >= get<2>(c) &&
-                 get<3>(a) >= get<3>(c))
-        {
-            v.push_back(std::tuple<array<int, 4>, array<int, 4>>(c, a));
+            v.push_back(std::tuple<std::array<int, 4>, std::array<int, 4>>(b, a));
         }
 
-        if (get<0>(b) < get<0>(c) && get<1>(b) < get<1>(c) && get<2>(b) < get<2>(c) &&
-                get<3>(b) < get<3>(c))
+        if (std::get<0>(a) < std::get<0>(c) && std::get<1>(a) < std::get<1>(c) && std::get<2>(a) < std::get<2>(c) &&
+                std::get<3>(a) < std::get<3>(c))
         {
-            v.push_back(std::tuple<array<int, 4>, array<int, 4>>(b, c));
+            v.push_back(std::tuple<std::array<int, 4>, std::array<int, 4>>(a, c));
         }
-        else if (get<0>(b) >= get<0>(c) && get<1>(b) >= get<1>(c) && get<2>(b) >= get<2>(c) &&
-                 get<3>(b) >= get<3>(c))
+        else if (std::get<0>(a) >= std::get<0>(c) && std::get<1>(a) >= std::get<1>(c) && std::get<2>(a) >= std::get<2>(c) &&
+                 std::get<3>(a) >= std::get<3>(c))
         {
-            v.push_back(std::tuple<array<int, 4>, array<int, 4>>(c, b));
+            v.push_back(std::tuple<std::array<int, 4>, std::array<int, 4>>(c, a));
+        }
+
+        if (std::get<0>(b) < std::get<0>(c) && std::get<1>(b) < std::get<1>(c) && std::get<2>(b) < std::get<2>(c) &&
+                std::get<3>(b) < std::get<3>(c))
+        {
+            v.push_back(std::tuple<std::array<int, 4>, std::array<int, 4>>(b, c));
+        }
+        else if (std::get<0>(b) >= std::get<0>(c) && std::get<1>(b) >= std::get<1>(c) && std::get<2>(b) >= std::get<2>(c) &&
+                 std::get<3>(b) >= std::get<3>(c))
+        {
+            v.push_back(std::tuple<std::array<int, 4>, std::array<int, 4>>(c, b));
         }
 
         return v;
@@ -135,23 +135,23 @@ vector<std::tuple<array<int, 4>, array<int, 4>>> Enclosure::report(vector<array<
     else
     {
         float m = getMedian(points);
-        vector<array<int, 4>> s1;
-        vector<array<int, 4>> s2;
+        std::vector<std::array<int, 4>> s1;
+        std::vector<std::array<int, 4>> s2;
         copy_if(points.begin(), points.end(), std::back_inserter(s1),
-                [m](array<int, 4> a)
+                [m](std::array<int, 4> a)
         {
             return a[3] <= m;
         });
         copy_if(points.begin(), points.end(), std::back_inserter(s2),
-                [m](array<int, 4> a)
+                [m](std::array<int, 4> a)
         {
             return a[3] > m;
         });
-        vector<std::tuple<array<int, 4>, array<int, 4>>> x = report(s1);
-        vector<std::tuple<array<int, 4>, array<int, 4>>> y = report(s2);
-        vector<std::tuple<array<int, 4>, array<int, 4>>> merged = merge(s1, s2);
+        std::vector<std::tuple<std::array<int, 4>, std::array<int, 4>>> x = report(s1);
+        std::vector<std::tuple<std::array<int, 4>, std::array<int, 4>>> y = report(s2);
+        std::vector<std::tuple<std::array<int, 4>, std::array<int, 4>>> merged = merge(s1, s2);
 
-        vector<std::tuple<array<int, 4>, array<int, 4>>> v;
+        std::vector<std::tuple<std::array<int, 4>, std::array<int, 4>>> v;
         size_t s = x.size() + y.size() + merged.size();
         v.reserve(s);
         v.insert(v.end(), x.begin(), x.end());
@@ -163,17 +163,17 @@ vector<std::tuple<array<int, 4>, array<int, 4>>> Enclosure::report(vector<array<
 };
 
 
-set<array<int, 4>> Enclosure::solve()
+std::set<std::array<int, 4>> Enclosure::solve()
 {
-    vector<std::tuple<array<int, 4>, array<int, 4>>> out = report(points);
+    std::vector<std::tuple<std::array<int, 4>, std::array<int, 4>>> out = report(points);
 
-    set<array<int, 4>> big;
-    set<array<int, 4>> small;
+    std::set<std::array<int, 4>> big;
+    std::set<std::array<int, 4>> small;
     for (int i = 0; i < out.size(); i++)
     {
 
-        array<int, 4> b = get<1>(out[i]);
-        array<int, 4> s = get<0>(out[i]);
+        std::array<int, 4> b = std::get<1>(out[i]);
+        std::array<int, 4> s = std::get<0>(out[i]);
         for (int j = 0; j < 4; j++)
         {
             b[j] = elementsMap[j][b[j]];
@@ -184,11 +184,11 @@ set<array<int, 4>> Enclosure::solve()
         small.insert(s);
     }
 
-    set<array<int, 4>> diff;
-    set<array<int, 4>> diff1;
-    set<array<int, 4>> diff2;
-    set<array<int, 4>> union_;
-    set<array<int, 4>> union__;
+    std::set<std::array<int, 4>> diff;
+    std::set<std::array<int, 4>> diff1;
+    std::set<std::array<int, 4>> diff2;
+    std::set<std::array<int, 4>> union_;
+    std::set<std::array<int, 4>> union__;
 
     set_union(big.begin(), big.end(), small.begin(), small.end(),
               std::inserter(union_, union_.begin()));
@@ -209,7 +209,7 @@ set<array<int, 4>> Enclosure::solve()
     return diff2;
 }
 
-Enclosure::Enclosure(vector<array<int, 4>> &points)
+Enclosure::Enclosure(std::vector<std::array<int, 4>> &points)
 {
 
     this->points = points;
@@ -218,15 +218,15 @@ Enclosure::Enclosure(vector<array<int, 4>> &points)
     normalize();
 }
 
-Enclosure::Enclosure(vector<Rect> &rects)
+Enclosure::Enclosure(std::vector<Rect> &rects)
 {
 
-    points = vector<array<int, 4>>();
+    points = std::vector<std::array<int, 4>>();
 
     for (int i = 0; i < rects.size(); i++)
     {
         Rect rect = rects.at(i);
-        array<int, 4> a{{-rect.x, -rect.y, rect.x + rect.width, rect.y + rect.height}};
+        std::array<int, 4> a{{-rect.x, -rect.y, rect.x + rect.width, rect.y + rect.height}};
         points.push_back(a);
     }
 
@@ -252,16 +252,16 @@ void Enclosure::normalize()
 
     for (int i = 0; i < size; i++)
     {
-        mapNumberToPos[0].push_back(get<0>(this->points[i]));
-        mapNumberToPos[1].push_back(get<1>(this->points[i]));
-        mapNumberToPos[2].push_back(get<2>(this->points[i]));
-        mapNumberToPos[3].push_back(get<3>(this->points[i]));
+        mapNumberToPos[0].push_back(std::get<0>(this->points[i]));
+        mapNumberToPos[1].push_back(std::get<1>(this->points[i]));
+        mapNumberToPos[2].push_back(std::get<2>(this->points[i]));
+        mapNumberToPos[3].push_back(std::get<3>(this->points[i]));
     }
 
     for (int j = 0; j < 4; j++)
     {
         sort(mapNumberToPos[j].begin(), mapNumberToPos[j].end());
-        map<int, int> lm;
+        std::map<int, int> lm;
         elementsMap[j] = lm;
     }
 
