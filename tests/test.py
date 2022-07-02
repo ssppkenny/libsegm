@@ -9,12 +9,12 @@ def test_reflow_image():
     zoom_factor = 2
     factor = 1.5
     new_img = reflow_image(factor, zoom_factor, img)
-    assert new_img.shape == (10154, 5960)
+    assert new_img.shape == (9894, 5960)
 
 def test_find_ordered_glyphs():
     img = cv2.imread('vd_p214.png', cv2.IMREAD_GRAYSCALE)
     lines_of_words = find_ordered_glyphs(img)
-    assert len(lines_of_words) == 33
+    assert len(lines_of_words) == 31
 
 def test_group_glyphs():
     r1 = glyph_result((0, 0, 2, 3, 0))

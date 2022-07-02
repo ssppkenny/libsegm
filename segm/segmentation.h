@@ -63,7 +63,7 @@ std::vector<words_struct> find_ordered_glyphs(
 
 std::map<int, std::tuple<cv::Rect, int, double>> find_neighbors(
     std::vector<cv::Rect>& glyphs,
-    std::vector<std::vector<int>>& nearest_neighbors);
+    std::vector<std::vector<int>>& nearest_neighbors, double average_height);
 
 std::map<int, int> group_words(std::vector<cv::Rect>& glyphs);
 

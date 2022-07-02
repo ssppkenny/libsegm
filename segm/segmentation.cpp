@@ -41,7 +41,6 @@ std::vector<std::vector<std::vector<glyph_result>>> transform(std::vector<std::v
 double findMedian(vector<int> a)
 {
     int n = a.size();
-  
     // If size of the arr[] is even
     if (n % 2 == 0) {
   
@@ -97,7 +96,7 @@ struct less_than_neighbor {
 
 std::map<int, std::tuple<cv::Rect, int, double>> find_neighbors(
     std::vector<cv::Rect>& glyphs,
-    std::vector<std::vector<int>>& nearest_neighbors) {
+    std::vector<std::vector<int>>& nearest_neighbors, double average_height) {
     std::map<int, std::tuple<cv::Rect, int, double>> ret_val;
 
     for (int i = 0; i < glyphs.size(); i++) {
@@ -112,6 +111,7 @@ std::map<int, std::tuple<cv::Rect, int, double>> find_neighbors(
         for (int i = 1; i < nbs.size(); i++) {
             cv::Rect nb = glyphs[nbs[i]];
             int a = r.y;
+            /* int b = r.height >= (average_height / 5.0) ? r.y + r.height : r.y + 2*r.height; */
             int b = r.y + r.height;
             int c = nb.y;
             int d = nb.y + nb.height;
@@ -127,6 +127,28 @@ std::map<int, std::tuple<cv::Rect, int, double>> find_neighbors(
         std::sort(right_nbs.begin(), right_nbs.end(), less_than_neighbor());
         if (right_nbs.size() > 0) {
             ret_val[j] = right_nbs[0];
+        } else {
+            if (r.height < 0.5 * average_height) {
+                for (int i = 1; i < nbs.size(); i++) {
+                    cv::Rect nb = glyphs[nbs[i]];
+                    int a = r.y;
+                    int b = r.y + (int)(r.height * 1.5);
+                    int c = nb.y;
+                    int d = nb.y + nb.height;
+                    int left = std::max(a, c);
+                    int right = std::min(b, d);
+
+                    if (left < right && nb.x > r.x) {
+                        right_nbs.push_back(std::make_tuple(
+                            nb, nbs[i], (right - left) / (double)nb.height));
+                    }
+                }
+                
+            }
+            std::sort(right_nbs.begin(), right_nbs.end(), less_than_neighbor());
+            if (right_nbs.size() > 0) {
+                ret_val[j] = right_nbs[0];
+            }
         }
     }
 
@@ -416,10 +438,15 @@ cv::Mat find_reflowed_image(
     int size = joined_rects.size();
     double data[size][2];
 
+    double sum_of_heights = 0.0;
+
     for (int i = 0; i < size; i++) {
         data[i][0] = joined_rects[i].x + joined_rects[i].width / 2.0;
         data[i][1] = joined_rects[i].y + joined_rects[i].height / 2.0;
+        sum_of_heights += joined_rects[i].height;
     }
+
+    double average_height = sum_of_heights / size;
 
     ::flann::Matrix<double> dataset(&data[0][0], size, 2);
 
@@ -451,7 +478,7 @@ cv::Mat find_reflowed_image(
         nearest_neighbors.push_back(nbs);
     }
     std::map<int, std::tuple<cv::Rect, int, double>> neighbors =
-        find_neighbors(joined_rects, nearest_neighbors);
+        find_neighbors(joined_rects, nearest_neighbors, average_height);
 
     NeighborsGraph g;
 
@@ -750,7 +777,8 @@ cv::Mat find_reflowed_image(
         current_height += h_;
 
     }
-    return new_image.clone();
+    //return new_image.clone();
+    return new_image;
 }
 std::vector<words_struct> find_ordered_glyphs(
     std::vector<cv::Rect>& joined_rects) {
@@ -776,11 +804,15 @@ std::vector<words_struct> find_ordered_glyphs(
     ::flann::Matrix<double> dists(new double[size * k], size, k);
 
     double q[size][2];
+    double sum_of_heights = 0.0;
 
     for (int i = 0; i < size; i++) {
         q[i][0] = joined_rects[i].x + joined_rects[i].width / 2.0;
         q[i][1] = joined_rects[i].y + joined_rects[i].height / 2.0;
+        sum_of_heights += joined_rects[i].height;
     }
+
+    double average_height = sum_of_heights / size;
 
     ::flann::Matrix<double> query(&q[0][0], size, 2);
     index.knnSearch(query, indices, dists, k, ::flann::SearchParams());
@@ -794,7 +826,7 @@ std::vector<words_struct> find_ordered_glyphs(
         nearest_neighbors.push_back(nbs);
     }
     std::map<int, std::tuple<cv::Rect, int, double>> neighbors =
-        find_neighbors(joined_rects, nearest_neighbors);
+        find_neighbors(joined_rects, nearest_neighbors, average_height);
 
     NeighborsGraph g;
 

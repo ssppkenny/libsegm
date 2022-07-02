@@ -297,6 +297,9 @@ static PyObject* get_neighbors(PyObject* self, PyObject *args)
 
 
     std::vector<cv::Rect> rects;
+
+    double sum_of_heights = 0.0;
+
     for (int i = 0; i<size; i++)
     {
         PyObject* item_object = PyList_GetItem(lst, i);
@@ -307,8 +310,10 @@ static PyObject* get_neighbors(PyObject* self, PyObject *args)
 
         cv::Rect r(x,y,w,h);
         rects.push_back(r);
+        sum_of_heights += h;
     }
 
+    double average_height = sum_of_heights / size;
 
     int nd = PyArray_NDIM(input);
     npy_intp* dims = PyArray_DIMS(input);
@@ -332,7 +337,7 @@ static PyObject* get_neighbors(PyObject* self, PyObject *args)
     }
 
 
-    std::map<int,std::tuple<cv::Rect,int,double>> nmap = find_neighbors(rects, nn);
+    std::map<int,std::tuple<cv::Rect,int,double>> nmap = find_neighbors(rects, nn, average_height);
 
     PyObject *ret_val = PyDict_New();
 
