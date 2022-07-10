@@ -3,6 +3,214 @@
 #include "IntervalJoin.h"
 #include "RectJoin.h"
 
+typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, int>
+    NeighborsGraph;
+
+struct less_than_glyph {
+    inline bool operator()(const cv::Rect& r1, const cv::Rect& r2) {
+        return r1.x < r2.x;
+    }
+};
+struct less_than_neighbor {
+    inline bool operator()(const std::tuple<cv::Rect, int, double>& r1,
+                           const std::tuple<cv::Rect, int, double>& r2) {
+        return get<0>(r1).x / (double)std::get<2>(r1) <
+               get<0>(r2).x / (double)std::get<2>(r2);
+    }
+};
+
+std::tuple<std::vector<words_struct>,double> search_lines(std::vector<cv::Rect>& joined_rects, float factor, float zoom_factor, cv::Mat& mat) {
+
+    interval_tree_t<int> tree;
+
+    int size = joined_rects.size();
+
+
+    float data[size][2];
+
+    double sum_of_heights = 0.0;
+
+    for (int i = 0; i < size; i++) {
+        data[i][0] = joined_rects[i].x + joined_rects[i].width / 2.0;
+        data[i][1] = joined_rects[i].y + joined_rects[i].height / 2.0;
+        sum_of_heights += joined_rects[i].height;
+    }
+
+    double average_height = sum_of_heights / size;
+
+    ::flann::Matrix<float> dataset(&data[0][0], size, 2);
+
+    int k = std::min(20, size);
+
+    ::flann::Index<::flann::L2<float>> index(dataset,
+                                              ::flann::KDTreeIndexParams());
+    index.buildIndex();
+
+    ::flann::Matrix<int> indices(new int[size * k], size, k);
+    ::flann::Matrix<float> dists(new float[size * k], size, k);
+
+    float q[size][2];
+
+    for (int i = 0; i < size; i++) {
+        q[i][0] = joined_rects[i].x + joined_rects[i].width / 2.0;
+        q[i][1] = joined_rects[i].y + joined_rects[i].height / 2.0;
+    }
+
+    ::flann::Matrix<float> query(&q[0][0], size, 2);
+    index.knnSearch(query, indices, dists, k, ::flann::SearchParams());
+
+    std::vector<std::vector<int>> nearest_neighbors;
+    for (int i = 0; i < size; i++) {
+        std::vector<int> nbs;
+        for (int j = 0; j < k; j++) {
+            nbs.push_back(indices[i][j]);
+        }
+        nearest_neighbors.push_back(nbs);
+    }
+    std::map<int, std::tuple<cv::Rect, int, double>> neighbors =
+        find_neighbors(joined_rects, nearest_neighbors, average_height);
+
+    NeighborsGraph g;
+
+    for (auto it = neighbors.begin(); it != neighbors.end(); it++) {
+        auto k = it->first;
+        auto v = it->second;
+
+        if (get<0>(v).x == -1) {
+            add_edge(k, k, g);
+        } else {
+            add_edge(k, std::get<1>(v), g);
+        }
+    }
+
+    int g_num_vertices = num_vertices(g);
+    std::vector<int> c(g_num_vertices);
+
+    assert(joined_rects_size == g_num_vertices);
+
+    connected_components(
+        g, make_iterator_property_map(c.begin(), get(vertex_index, g), c[0]));
+
+    std::map<int, std::vector<int>> cc;
+    for (int i = 0; i < c.size(); i++) {
+        if (cc.find(c[i]) == cc.end()) {
+            std::vector<int> v;
+            v.push_back(i);
+            cc[c[i]] = v;
+        } else {
+            auto v = cc[c[i]];
+            v.push_back(i);
+            cc[c[i]] = v;
+        }
+    }
+
+    std::set<int> map_keys;
+
+    for (auto it = cc.begin(); it != cc.end(); ++it) {
+        map_keys.insert(it->first);
+    }
+
+    std::vector<std::tuple<int, int, int>> line_limits;
+    std::set<int>::iterator it = map_keys.begin();
+    // int ind = 0;
+    while (it != map_keys.end()) {
+        int k = (*it);
+        std::vector<int> v = cc[k];
+
+        int min1 = INT_MAX;
+        int max1 = 0;
+        for (auto e : v) {
+            cv::Rect r = joined_rects[e];
+            if (r.y < min1) {
+                min1 = r.y;
+            }
+            if (r.y + r.height > max1) {
+                max1 = r.y + r.height;
+            }
+        }
+        line_limits.push_back(std::make_tuple(min1, max1, k));
+        // ind++;
+        it++;
+    }
+
+    std::vector<interval<int>> joined_lined_limits =
+        join_intervals(line_limits);
+
+    for (int i = 0; i < joined_lined_limits.size(); i++) {
+        tree.insert(make_safe_interval(joined_lined_limits[i].low(),
+                                       joined_lined_limits[i].high()));
+    }
+
+    std::map<std::tuple<int, int>, std::vector<cv::Rect>> lines;
+
+    std::set<std::tuple<int, int>> lines_keys;
+
+    for (int i = 0; i < joined_rects.size(); i++) {
+        cv::Rect r = joined_rects[i];
+        std::vector<interval<int>> rt;
+        tree.overlap_find_all({r.y, r.y}, [&rt](auto iter) {
+            rt.push_back(make_safe_interval(iter->low(), iter->high()));
+            return true;
+        });
+
+        if (rt.size() > 0) {
+            if (lines.find(std::make_tuple(rt[0].low(), rt[0].high())) !=
+                lines.end()) {
+                std::vector<cv::Rect> v =
+                    lines[std::make_tuple(rt[0].low(), rt[0].high())];
+                v.push_back(r);
+                lines[std::make_tuple(rt[0].low(), rt[0].high())] = v;
+            } else {
+                lines_keys.insert(std::make_tuple(rt[0].low(), rt[0].high()));
+                std::vector<cv::Rect> v;
+                v.push_back(r);
+                lines[std::make_tuple(rt[0].low(), rt[0].high())] = v;
+            }
+        }
+    }
+
+    std::vector<words_struct> lines_of_words;
+
+    for (auto it = lines_keys.begin(); it != lines_keys.end(); it++) {
+        auto k = (*it);
+        auto v = lines[k];
+        auto grouped_glyphs = group_glyphs(v);
+        double lower = baseline(grouped_glyphs);
+        std::sort(grouped_glyphs.begin(), grouped_glyphs.end(),
+                  less_than_glyph());
+        auto interword_gaps = group_words(grouped_glyphs);
+        std::vector<std::vector<cv::Rect>> words =
+            word_limits(interword_gaps, grouped_glyphs);
+        struct words_struct ws = {lower, words};
+        lines_of_words.push_back(ws);
+    }
+
+    return std::make_tuple(lines_of_words, average_height);
+}
+
+
+std::vector<int> find_paragraphs(std::vector<int> lefts, double average_height) {
+    int n = lefts.size();
+    std::vector<int> ret_val;
+    for (int i = 0; i<n; i++) {
+        int l = lefts[i];
+        if (i > 0 && i < n - 1) {
+            if (l - lefts[i+1] > average_height && l - lefts[i-1] > average_height) {
+                ret_val.push_back(i);
+            }
+        }
+        else if (i == 0) {
+            if (l - lefts[i+1] > average_height) {
+                ret_val.push_back(i);
+            }
+        } else if (i == n - 1) {
+            if (l - lefts[i-1] > average_height) {
+                ret_val.push_back(i);
+            }
+        }
+    }
+    return ret_val;
+}
 
 
 std::vector<std::vector<std::vector<glyph_result>>> transform(std::vector<std::vector<std::vector<glyph_result>>> lines_of_words, float zoom_factor) {
@@ -78,21 +286,6 @@ double findMedian(vector<int> a)
     }
 }
 
-typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, int>
-    NeighborsGraph;
-
-struct less_than_glyph {
-    inline bool operator()(const cv::Rect& r1, const cv::Rect& r2) {
-        return r1.x < r2.x;
-    }
-};
-struct less_than_neighbor {
-    inline bool operator()(const std::tuple<cv::Rect, int, double>& r1,
-                           const std::tuple<cv::Rect, int, double>& r2) {
-        return get<0>(r1).x / (double)std::get<2>(r1) <
-               get<0>(r2).x / (double)std::get<2>(r2);
-    }
-};
 
 std::map<int, std::tuple<cv::Rect, int, double>> find_neighbors(
     std::vector<cv::Rect>& glyphs,
@@ -128,26 +321,45 @@ std::map<int, std::tuple<cv::Rect, int, double>> find_neighbors(
         if (right_nbs.size() > 0) {
             ret_val[j] = right_nbs[0];
         } else {
-            if (r.height < 0.5 * average_height) {
                 for (int i = 1; i < nbs.size(); i++) {
                     cv::Rect nb = glyphs[nbs[i]];
                     int a = r.y;
-                    int b = r.y + (int)(r.height * 1.5);
+                    int b = r.y + r.height;
                     int c = nb.y;
                     int d = nb.y + nb.height;
                     int left = std::max(a, c);
                     int right = std::min(b, d);
 
-                    if (left < right && nb.x > r.x) {
+                    if (left < right && nb.x < r.x && abs(nb.x - r.x) < average_height)  {
                         right_nbs.push_back(std::make_tuple(
                             nb, nbs[i], (right - left) / (double)nb.height));
                     }
                 }
                 
-            }
             std::sort(right_nbs.begin(), right_nbs.end(), less_than_neighbor());
             if (right_nbs.size() > 0) {
                 ret_val[j] = right_nbs[0];
+            } else {
+                for (int i = 1; i < nbs.size(); i++) {
+                    cv::Rect nb = glyphs[nbs[i]];
+                    int a = r.y;
+                    int b = r.y + 2*r.height;
+                    int c = nb.y;
+                    int d = nb.y + nb.height;
+
+                    int left = std::max(a, c);
+                    int right = std::min(b, d);
+
+                    if (left < right && r.x > nb.x  && r.x + r.width < nb.x + nb.width && nb.x - r.x < 0.5*average_height && r.height < 0.4*average_height )  {
+                        right_nbs.push_back(std::make_tuple(
+                            nb, nbs[i], (right - left) / (double)nb.height));
+                    }
+                }
+
+                std::sort(right_nbs.begin(), right_nbs.end(), less_than_neighbor());
+                if (right_nbs.size() > 0) {
+                    ret_val[j] = right_nbs[0];
+                }    
             }
         }
     }
@@ -404,6 +616,7 @@ std::vector<std::vector<std::tuple<Word, double>>> split_paragraph(std::vector<s
 
     for (auto word : words) {
         Word w = std::get<0>(word);
+        auto br = w.bounding_rect;
         int g = std::get<1>(word);
         act_width += w.bounding_rect.width;
         if (act_width > width) {
@@ -433,164 +646,14 @@ std::vector<std::vector<std::tuple<Word, double>>> split_paragraph(std::vector<s
 
 cv::Mat find_reflowed_image(
     std::vector<cv::Rect>& joined_rects, float factor, float zoom_factor, cv::Mat& mat) {
-    interval_tree_t<int> tree;
-
-    int size = joined_rects.size();
-    double data[size][2];
-
-    double sum_of_heights = 0.0;
-
-    for (int i = 0; i < size; i++) {
-        data[i][0] = joined_rects[i].x + joined_rects[i].width / 2.0;
-        data[i][1] = joined_rects[i].y + joined_rects[i].height / 2.0;
-        sum_of_heights += joined_rects[i].height;
-    }
-
-    double average_height = sum_of_heights / size;
-
-    ::flann::Matrix<double> dataset(&data[0][0], size, 2);
-
-    int k = std::min(100, size);
-
-    ::flann::Index<::flann::L2<double>> index(dataset,
-                                              ::flann::KDTreeIndexParams(1));
-    index.buildIndex();
-
-    ::flann::Matrix<int> indices(new int[size * k], size, k);
-    ::flann::Matrix<double> dists(new double[size * k], size, k);
-
-    double q[size][2];
-
-    for (int i = 0; i < size; i++) {
-        q[i][0] = joined_rects[i].x + joined_rects[i].width / 2.0;
-        q[i][1] = joined_rects[i].y + joined_rects[i].height / 2.0;
-    }
-
-    ::flann::Matrix<double> query(&q[0][0], size, 2);
-    index.knnSearch(query, indices, dists, k, ::flann::SearchParams());
-
-    std::vector<std::vector<int>> nearest_neighbors;
-    for (int i = 0; i < size; i++) {
-        std::vector<int> nbs;
-        for (int j = 0; j < k; j++) {
-            nbs.push_back(indices[i][j]);
-        }
-        nearest_neighbors.push_back(nbs);
-    }
-    std::map<int, std::tuple<cv::Rect, int, double>> neighbors =
-        find_neighbors(joined_rects, nearest_neighbors, average_height);
-
-    NeighborsGraph g;
-
-    for (auto it = neighbors.begin(); it != neighbors.end(); it++) {
-        auto k = it->first;
-        auto v = it->second;
-
-        if (get<0>(v).x == -1) {
-            add_vertex(k, g);
-        } else {
-            add_edge(k, std::get<1>(v), g);
-        }
-    }
-
-    std::vector<int> c(num_vertices(g));
-
-    connected_components(
-        g, make_iterator_property_map(c.begin(), get(vertex_index, g), c[0]));
-
-    std::map<int, std::vector<int>> cc;
-    for (int i = 0; i < c.size(); i++) {
-        if (cc.find(c[i]) == cc.end()) {
-            std::vector<int> v;
-            v.push_back(i);
-            cc[c[i]] = v;
-        } else {
-            auto v = cc[c[i]];
-            v.push_back(i);
-            cc[c[i]] = v;
-        }
-    }
-
-    std::set<int> map_keys;
-
-    for (auto it = cc.begin(); it != cc.end(); ++it) {
-        map_keys.insert(it->first);
-    }
-
-    std::vector<std::tuple<int, int, int>> line_limits;
-    std::set<int>::iterator it = map_keys.begin();
-    // int ind = 0;
-    while (it != map_keys.end()) {
-        int k = (*it);
-        std::vector<int> v = cc[k];
-
-        int min1 = INT_MAX;
-        int max1 = 0;
-        for (auto e : v) {
-            cv::Rect r = joined_rects[e];
-            if (r.y < min1) {
-                min1 = r.y;
-            }
-            if (r.y + r.height > max1) {
-                max1 = r.y + r.height;
-            }
-        }
-        line_limits.push_back(std::make_tuple(min1, max1, k));
-        // ind++;
-        it++;
-    }
-
-    std::vector<interval<int>> joined_lined_limits =
-        join_intervals(line_limits);
-
-    for (int i = 0; i < joined_lined_limits.size(); i++) {
-        tree.insert(make_safe_interval(joined_lined_limits[i].low(),
-                                       joined_lined_limits[i].high()));
-    }
-
-    std::map<std::tuple<int, int>, std::vector<cv::Rect>> lines;
-
-    std::set<std::tuple<int, int>> lines_keys;
-
-    for (int i = 0; i < joined_rects.size(); i++) {
-        cv::Rect r = joined_rects[i];
-        std::vector<interval<int>> rt;
-        tree.overlap_find_all({r.y, r.y}, [&rt](auto iter) {
-            rt.push_back(make_safe_interval(iter->low(), iter->high()));
-            return true;
-        });
-
-        if (rt.size() > 0) {
-            if (lines.find(std::make_tuple(rt[0].low(), rt[0].high())) !=
-                lines.end()) {
-                std::vector<cv::Rect> v =
-                    lines[std::make_tuple(rt[0].low(), rt[0].high())];
-                v.push_back(r);
-                lines[std::make_tuple(rt[0].low(), rt[0].high())] = v;
-            } else {
-                lines_keys.insert(std::make_tuple(rt[0].low(), rt[0].high()));
-                std::vector<cv::Rect> v;
-                v.push_back(r);
-                lines[std::make_tuple(rt[0].low(), rt[0].high())] = v;
-            }
-        }
-    }
-
+    
     std::vector<words_struct> lines_of_words;
+    double average_height = 0.0;
+    std::vector<int> line_sizes;
+    std::tuple<std::vector<words_struct>,double> tup = search_lines(joined_rects, factor, zoom_factor, mat);
+    average_height = std::get<1>(tup);
+    lines_of_words = std::get<0>(tup);
 
-    for (auto it = lines_keys.begin(); it != lines_keys.end(); it++) {
-        auto k = (*it);
-        auto v = lines[k];
-        auto grouped_glyphs = group_glyphs(v);
-        double lower = baseline(grouped_glyphs);
-        std::sort(grouped_glyphs.begin(), grouped_glyphs.end(),
-                  less_than_glyph());
-        auto interword_gaps = group_words(grouped_glyphs);
-        std::vector<std::vector<cv::Rect>> words =
-            word_limits(interword_gaps, grouped_glyphs);
-        struct words_struct ws = {lower, words};
-        lines_of_words.push_back(ws);
-    }
     // begin reflow
     cv::Mat img;
     cv::Size s = mat.size();
@@ -641,7 +704,7 @@ cv::Mat find_reflowed_image(
             }
             w.push_back(w1);
         }
-        lefts.push_back((int)(left * zoom_factor));
+        lefts.push_back((int)(left));
         heights.push_back((int)(zoom_factor * max_height));
         out.push_back(w);
     }
@@ -651,20 +714,19 @@ cv::Mat find_reflowed_image(
     double av_width = sum / p.size();
     out = transform(out, zoom_factor);
 
-    std::vector<int> par_nums;
-    int left = *min_element(lefts.begin(), lefts.end());
-    for (int i=0; i<lefts.size(); i++) {
-        int l = lefts[i];
-        if (abs(l - left) > (2 * av_width)) {
-            par_nums.push_back(i);
-        }
+    std::vector<int> par_nums = find_paragraphs(lefts, average_height);
 
+
+    if (par_nums.size() == 0 || par_nums[0] != 0) {
+        par_nums.insert(par_nums.begin(), 0);
     }
-    
+
+
+    int left = *min_element(lefts.begin(), lefts.end());
 
     int from_ = 0;
     std::vector<std::vector<std::vector<std::vector<glyph_result>>>> paragraphs;
-    for (int i=0; i<out.size(); i++) {
+    for (int i=1; i<out.size(); i++) {
         if (std::find(par_nums.begin(), par_nums.end(), i) != par_nums.end()) {
             std::vector<std::vector<std::vector<glyph_result>>>::const_iterator first = out.begin() + from_;
             std::vector<std::vector<std::vector<glyph_result>>>::const_iterator second = out.begin() + i;
@@ -674,21 +736,17 @@ cv::Mat find_reflowed_image(
         }
     }
 
+
     std::vector<std::vector<std::vector<glyph_result>>>::const_iterator first = out.begin() + par_nums[par_nums.size()-1];
     std::vector<std::vector<std::vector<glyph_result>>>::const_iterator second = out.end();
     std::vector<std::vector<std::vector<glyph_result>>> sub_vector(first, second);
     paragraphs.push_back(sub_vector);
 
 
-
-    if (par_nums.size() == 0 || par_nums[0] != 0) {
-        par_nums.insert(par_nums.begin(), 0);
-    }
-    
     std::vector<double> indents;
 
     for (int i=0; i<par_nums.size(); i++) {
-        indents.push_back(lefts[par_nums[i]] * factor / zoom_factor);
+        indents.push_back(av_width * 2); 
     }
 
 
@@ -698,7 +756,6 @@ cv::Mat find_reflowed_image(
        auto p = paragraphs[i];
        auto tp = transform_paragraph(p, indents, (int)(av_width), std::min(i, (int)(indents.size() - 1)));
        transform_paragraphs.push_back(tp);
-       
     }
 
     std::vector<std::vector<std::tuple<Word, double>>> stps;
@@ -709,13 +766,13 @@ cv::Mat find_reflowed_image(
     for (auto tp : transform_paragraphs) {
         std::vector<std::vector<std::tuple<Word, double>>> stp = split_paragraph(tp, new_width);
         for (auto x : stp) {
-            stps.push_back(x);
             int height = -1;
             int shift = INT_MAX;
             for (auto y : x) {
                 std::vector<glyph_result> glyphs = std::get<0>(y).glyphs;
                 if (std::get<0>(y).bounding_rect.height > height) {
                     height = std::get<0>(y).bounding_rect.height;
+                    auto bounding_rect = std::get<0>(y).bounding_rect;
                 }
                 for (auto gr : glyphs) {
                     if (gr.shift < shift) {
@@ -726,26 +783,29 @@ cv::Mat find_reflowed_image(
             shifts.push_back(shift);
             g_heights.push_back(height);
             tot_height += height;
+            if (height > 0) {
+                stps.push_back(x);
+            }
 
         }
 
     }
 
 
+    double height_coef = 1.5;
 
-    int total_height = 150;
+    int total_height = margin;
     std::vector<int> line_heights;
     double av_height = tot_height / g_heights.size();
-
 
     for (int i=0;i<g_heights.size(); i++) {
         int h = g_heights[i];
         if (h > av_height) {
-            total_height += (int)(1.3 * h);
-            line_heights.push_back((int)(1.3 * h));
+            total_height += (int)(height_coef * h);
+            line_heights.push_back((int)(height_coef * h));
         } else {
-            total_height += (int)(1.3 * av_height);
-            line_heights.push_back((int)(1.3 * av_height));
+            total_height += (int)(height_coef * av_height);
+            line_heights.push_back((int)(height_coef * av_height));
         }
     }
 
@@ -782,6 +842,10 @@ cv::Mat find_reflowed_image(
 }
 std::vector<words_struct> find_ordered_glyphs(
     std::vector<cv::Rect>& joined_rects) {
+
+
+    int joined_rects_size = joined_rects.size();
+
     interval_tree_t<int> tree;
 
     int size = joined_rects.size();
@@ -833,49 +897,53 @@ std::vector<words_struct> find_ordered_glyphs(
     for (auto it = neighbors.begin(); it != neighbors.end(); it++) {
         auto k = it->first;
         auto v = it->second;
-
-        if (get<0>(v).x == -1) {
-            add_vertex(k, g);
+        int nb = std::get<1>(v);
+        if (std::get<0>(v).x == -1) {
+            add_edge(k, k, g);
         } else {
-            add_edge(k, std::get<1>(v), g);
+            add_edge(k, nb, g);
         }
     }
+
 
     std::vector<int> c(num_vertices(g));
 
     connected_components(
         g, make_iterator_property_map(c.begin(), get(vertex_index, g), c[0]));
 
+
     std::map<int, std::vector<int>> cc;
     for (int i = 0; i < c.size(); i++) {
         if (cc.find(c[i]) == cc.end()) {
-            std::vector<int> v;
-            v.push_back(i);
-            cc[c[i]] = v;
+            std::vector<int> v1;
+            v1.push_back(i);
+            cc[c[i]] = v1;
         } else {
-            auto v = cc[c[i]];
-            v.push_back(i);
-            cc[c[i]] = v;
+            auto v2 = cc[c[i]];
+            v2.push_back(i);
+            cc[c[i]] = v2;
         }
     }
 
     std::set<int> map_keys;
 
     for (auto it = cc.begin(); it != cc.end(); ++it) {
-        map_keys.insert(it->first);
+        int key = it->first;
+        map_keys.insert(key);
     }
 
+
     std::vector<std::tuple<int, int, int>> line_limits;
-    std::set<int>::iterator it = map_keys.begin();
+   // std::set<int>::iterator it = map_keys.begin();
     // int ind = 0;
-    while (it != map_keys.end()) {
-        int k = (*it);
-        std::vector<int> v = cc[k];
+    for (int k :  map_keys) {
+        //int k = (*it);
 
         int min1 = INT_MAX;
-        int max1 = 0;
-        for (auto e : v) {
-            cv::Rect r = joined_rects[e];
+        int max1 = -1;
+        for (int j = 0; j<cc[k].size(); j++) {
+            cv::Rect r = joined_rects[cc[k][j]];
+
             if (r.y < min1) {
                 min1 = r.y;
             }
@@ -885,8 +953,9 @@ std::vector<words_struct> find_ordered_glyphs(
         }
         line_limits.push_back(std::make_tuple(min1, max1, k));
         // ind++;
-        it++;
+        //it++;
     }
+
 
     std::vector<interval<int>> joined_lined_limits =
         join_intervals(line_limits);
@@ -1120,21 +1189,6 @@ std::map<int, std::vector<std::vector<int>>> detect_belonging_captions(
                 bool cond = passes_horizontally && !is_line && is_caption &&
                     br.height < multiplier * most_frequent_height;
 
-
-
-               // if (sc.size() == 4) {
-              //      printf("picture rect %d %d %d %d\n", jr[pi].x, jr[pi].y, jr[pi].width, jr[pi].height);
-              //      printf("size and cond %d, %d\n", sc.size(), cond);
-              //      printf("left count and right count %d, %d\n", left_count, right_count);
-              //      printf("extension %d\n", extension);
-              //      printf("passes_horizontally %d\n", passes_horizontally);
-              //      printf("is_line %d\n", is_line);
-              //      printf("is_caption %d\n", is_caption);
-              //      printf("br is %d %d %d %d\n", br.x, br.y, br.width, br.height);
-              //      printf("br.height < multiplier * most_frequent_height%d\n", br.height < multiplier * most_frequent_height);
-
-                //}
-
                 if (passes_horizontally && !is_line && is_caption &&
                     br.height < multiplier * most_frequent_height) {
                     ds.push_back(std::make_tuple(di.distance, pi, di.pos));
@@ -1161,7 +1215,7 @@ std::map<int, std::vector<std::vector<int>>> detect_belonging_captions(
     return belongs;
 }
 
-void join_with_captions(std::map<int, std::vector<std::vector<int>>>& belongs,
+std::vector<int> join_with_captions(std::map<int, std::vector<std::vector<int>>>& belongs,
                         std::vector<cv::Rect>& rects,
                         std::vector<cv::Rect>& output) {
     std::vector<cv::Rect> ret_val;
@@ -1200,9 +1254,24 @@ void join_with_captions(std::map<int, std::vector<std::vector<int>>>& belongs,
     }
 
     std::vector<cv::Rect> new_rects = join_rects(ret_val);
-    for (auto r : new_rects) {
-        output.push_back(r);
+    double s = 0.0;
+    for (int i = 0; i<new_rects.size(); i++) {
+        s += new_rects[i].height;
+        output.push_back(new_rects[i]);
     }
+
+    double average_height = s / new_rects.size();
+
+    std::vector<int> pic_indexes;
+
+    for (int i = 0; i<new_rects.size(); i++) {
+        if (new_rects[i].height > 7 * average_height) {
+            pic_indexes.push_back(i);
+        }
+    }
+    
+    return pic_indexes;
+
 }
 
 std::map<int, std::vector<std::vector<int>>> detect_captions(
@@ -1218,11 +1287,8 @@ std::map<int, std::vector<std::vector<int>>> detect_captions(
         heights.push_back(jr.height);
     }
 
-    //double med = findMedian(heights);
-    //printf("median height = %f\n", med);
 
     double most_frequent_height = s / joined_rects.size();
-    //printf("most frequent height = %f\n", most_frequent_height);
     for (int i = 0; i < n; i++) {
         cv::Rect jr = joined_rects[i];
         if (jr.height > 7 * most_frequent_height) {

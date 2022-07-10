@@ -43,7 +43,7 @@ std::map<int, std::vector<std::vector<int>>> detect_belonging_captions(
     std::vector<std::vector<int>> small_components, double most_frequent_height,
     double multiplier);
 
-void join_with_captions(std::map<int, std::vector<std::vector<int>>>& belongs,
+std::vector<int> join_with_captions(std::map<int, std::vector<std::vector<int>>>& belongs,
                         std::vector<cv::Rect>& rects,
                         std::vector<cv::Rect>& output);
 

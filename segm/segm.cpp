@@ -585,7 +585,7 @@ static std::map<int,int> clusters(PyObject* input, PyArray_Descr* dtype)
     return ret_val;
 
 }
-static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype, bool do_captions)
+static std::tuple<std::vector<cv::Rect>, std::vector<int>> join_rects(PyObject* input, PyArray_Descr* dtype, bool do_captions)
 {
 
     int nd = PyArray_NDIM(input);
@@ -674,15 +674,16 @@ static std::vector<cv::Rect> join_rects(PyObject* input, PyArray_Descr* dtype, b
 
     if (!do_captions)
     {
-        return new_rects;
+        return std::make_tuple(new_rects, std::vector<int>());
     }
+
 
     auto belongs = detect_captions(mat, new_rects);
 
     std::vector<cv::Rect> rects_with_joined_captions;
-    join_with_captions(belongs, new_rects, rects_with_joined_captions);
+    std::vector<int> pic_indexes = join_with_captions(belongs, new_rects, rects_with_joined_captions);
 
-    return rects_with_joined_captions;
+    return std::make_tuple(rects_with_joined_captions, pic_indexes);
 
 }
 
@@ -697,7 +698,16 @@ static PyObject* get_reflowed_image(PyObject* self, PyObject *args)
         return NULL;
     }
 
-    std::vector<cv::Rect> new_rects = join_rects(input, dtype, false);
+    std::tuple<std::vector<cv::Rect>,std::vector<int>> new_rects_with_pictures = join_rects(input, dtype, true);
+    std::vector<cv::Rect> new_rects = std::get<0>(new_rects_with_pictures);
+    std::vector<int> pic_indexes = std::get<1>(new_rects_with_pictures);
+
+    std::vector<cv::Rect> filtered_rects;
+    for (int i=0;i<new_rects.size(); i++) {
+        if (std::find(pic_indexes.begin(), pic_indexes.end(), i) == pic_indexes.end()) {
+            filtered_rects.push_back(new_rects[i]);
+        }
+    }
 
     int nd = PyArray_NDIM(input);
     npy_intp* dims = PyArray_DIMS(input);
@@ -707,7 +717,7 @@ static PyObject* get_reflowed_image(PyObject* self, PyObject *args)
                             1, 3, NPY_ARRAY_CARRAY, NULL);
 
     cv::Mat mat = cv::Mat(cv::Size(dims[1], dims[0]), CV_8UC1, PyArray_DATA(contig));
-    cv::Mat new_image = find_reflowed_image(new_rects, factor, zoom_factor, mat);
+    cv::Mat new_image = find_reflowed_image(filtered_rects, factor, zoom_factor, mat);
 
     cv::Size s = new_image.size();
       const unsigned int nElem = s.height * s.width;
@@ -735,10 +745,18 @@ static PyObject* get_ordered_glyphs(PyObject* self, PyObject *args)
         return NULL;
     }
 
-    std::vector<cv::Rect> new_rects = join_rects(input, dtype, false);
+    auto new_rects_with_pictures = join_rects(input, dtype, true);
+    std::vector<cv::Rect> new_rects = std::get<0>(new_rects_with_pictures);
+    std::vector<int> pic_indexes = std::get<1>(new_rects_with_pictures);
 
+    std::vector<cv::Rect> filtered_rects;
+    for (int i=0;i<new_rects.size(); i++) {
+        if (std::find(pic_indexes.begin(), pic_indexes.end(), i) == pic_indexes.end()) {
+            filtered_rects.push_back(new_rects[i]);
+        }
+    }
 
-    std::vector<words_struct> lines_of_words = find_ordered_glyphs(new_rects);
+    std::vector<words_struct> lines_of_words = find_ordered_glyphs(filtered_rects);
 
 
     PyObject *ret_val = PyList_New(lines_of_words.size());
@@ -785,7 +803,10 @@ static PyObject* get_clusters(PyObject* self, PyObject *args)
     }
 
     std::map<int,int> map = clusters(input, dtype);
-    std::vector<cv::Rect> new_rects = join_rects(input, dtype, false);
+
+    std::tuple<std::vector<cv::Rect>,std::vector<int>> new_rects_with_pictures = join_rects(input, dtype, false);
+    std::vector<cv::Rect> new_rects = std::get<0>(new_rects_with_pictures);
+    //std::vector<int> pic_indexes = std::get<1>(new_rects_with_pictures);
 
     int N = new_rects.size();
     PyObject* list = PyList_New(N);
@@ -825,7 +846,9 @@ static PyObject* get_joined_rects(PyObject* self, PyObject *args)
         return NULL;
     }
 
-    std::vector<cv::Rect> new_rects = join_rects(input, dtype, true);
+    auto new_rects_with_pictures = join_rects(input, dtype, true);
+    std::vector<cv::Rect> new_rects = std::get<0>(new_rects_with_pictures); 
+    std::vector<int> pic_indexes = std::get<1>(new_rects_with_pictures); 
 
     int N = new_rects.size();
     PyObject* list = PyList_New(N);
