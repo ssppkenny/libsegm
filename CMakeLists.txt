@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(MINIMUM_LEPTONICA_VERSION 1.79)
 set(MINIMUM_FLANN_VERSION 1.9.1)
 
-find_package(Boost 1.74.0 COMPONENTS system filesystem graph) 
+find_package(Boost 1.71.0 COMPONENTS system filesystem graph) 
 
 
 find_package( OpenCV REQUIRED core imgproc imgcodecs core)
@@ -54,10 +54,8 @@ find_package(PythonExtensions REQUIRED)
 add_library(_segm MODULE ${SRCS})
 python_extension_module(_segm)
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    find_package(Python3 3.9 REQUIRED COMPONENTS NumPy)
-    message(STATUS ${Python3_NumPy_INCLUDE_DIRS})
-endif()
+find_package(Python3 3.9 REQUIRED COMPONENTS NumPy)
+message(STATUS ${Python3_NumPy_INCLUDE_DIRS})
 
 exec_program(${PYTHON_EXECUTABLE}
              ARGS "-c \"import numpy; print(numpy.get_include())\""
