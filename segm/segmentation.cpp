@@ -2,6 +2,7 @@
 
 #include "IntervalJoin.h"
 #include "RectJoin.h"
+#include <tuple>
 
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, int>
     NeighborsGraph;
@@ -87,6 +88,8 @@ std::tuple<std::vector<words_struct>,double> search_lines(std::vector<cv::Rect>&
     std::vector<int> c(g_num_vertices);
 
     assert(joined_rects_size == g_num_vertices);
+
+    printf("joined_rects size = %d, num_vertices = %d\n", size, g_num_vertices);
 
     connected_components(
         g, make_iterator_property_map(c.begin(), get(vertex_index, g), c[0]));
@@ -645,8 +648,11 @@ std::vector<std::vector<std::tuple<Word, double>>> split_paragraph(std::vector<s
 }
 
 cv::Mat find_reflowed_image(
-    std::vector<cv::Rect>& joined_rects, float factor, float zoom_factor, cv::Mat& mat) {
-    
+    std::vector<cv::Rect>& joined_rects,std::vector<cv::Rect>& pictures, float factor, float zoom_factor, cv::Mat& mat) {
+   
+
+
+
     std::vector<words_struct> lines_of_words;
     double average_height = 0.0;
     std::vector<int> line_sizes;
@@ -661,6 +667,30 @@ cv::Mat find_reflowed_image(
     int cols = (int)(s.width * zoom_factor);
     cv::resize(mat, img, Size(cols, rows), cv::INTER_LINEAR);
     int new_width = s.width * factor;
+
+
+    std::vector<cv::Rect> scaled_pictures;
+    std::map<std::tuple<int,int, int, int>, cv::Rect> picture_transform;
+
+    for (int i=0; i<pictures.size(); i++) {
+        cv::Rect pic = pictures[i];
+        cv::Rect scaled_pic((int)(pic.x * zoom_factor), (int)(pic.y * zoom_factor), (int)(pic.width * zoom_factor), (int)(pic.height * zoom_factor));
+        if (scaled_pic.width >= new_width) {
+            double scale_factor = scaled_pic.width / (double)new_width;
+            int nx = (int)(scaled_pic.x/scale_factor);
+            int ny = (int)(scaled_pic.y/scale_factor);
+            int nw = (int)(scaled_pic.width/scale_factor);
+            int nh = (int)(scaled_pic.height/scale_factor);
+            cv::Rect sp(nx, ny, nw, nh); 
+            scaled_pictures.push_back(sp);
+            picture_transform[std::make_tuple(pic.x, pic.y, pic.width, pic.height)] = sp;
+        } else {
+            scaled_pictures.push_back(scaled_pic);
+            picture_transform[std::make_tuple(pic.x, pic.y, pic.width, pic.height)] = scaled_pic;
+        }
+    }
+
+
     int margin = (int)(0.05 * zoom_factor * new_width);
     std::vector<std::vector<std::vector<glyph_result>>> out;
     std::vector<glyph_result> p;
@@ -791,6 +821,8 @@ cv::Mat find_reflowed_image(
 
     }
 
+    // add pictures to total_height
+    //
 
     double height_coef = 1.5;
 
@@ -808,6 +840,12 @@ cv::Mat find_reflowed_image(
             line_heights.push_back((int)(height_coef * av_height));
         }
     }
+
+    for (int i=0;i<scaled_pictures.size(); i++) {
+        total_height += scaled_pictures[i].height;
+    }
+
+    total_height += average_height * (scaled_pictures.size() + 1);
 
     int mat_height = total_height + margin;
     int mat_width  = (int)(new_width + 2*margin);
@@ -828,8 +866,8 @@ cv::Mat find_reflowed_image(
                     bs = gr.shift;
                 }
             }
-            Mat srcRoi = img(cv::Rect(w_.bounding_rect.x, w_.bounding_rect.y, w_.bounding_rect.width, w_.bounding_rect.height));
-            Mat dstRoi = new_image(cv::Rect(left, current_height + (int)(0.2 * h_) - w_.bounding_rect.height - bs, w_.bounding_rect.width, w_.bounding_rect.height));
+            cv::Mat srcRoi = img(cv::Rect(w_.bounding_rect.x, w_.bounding_rect.y, w_.bounding_rect.width, w_.bounding_rect.height));
+            cv::Mat dstRoi = new_image(cv::Rect(left, current_height + (int)(0.2 * h_) - w_.bounding_rect.height - bs, w_.bounding_rect.width, w_.bounding_rect.height));
             srcRoi.copyTo(dstRoi);
             left += (int)g_ + w_.bounding_rect.width;
 
@@ -837,6 +875,20 @@ cv::Mat find_reflowed_image(
         current_height += h_;
 
     }
+
+    current_height += average_height;
+
+    for (auto const& t : picture_transform) {
+        std::tuple<int,int, int, int> k = t.first;
+        cv::Rect r = t.second;
+        cv::Mat srcRoi = img(cv::Rect(r.x, r.y, r.width, r.height));
+        int left_x = (int)(mat_width - r.width)/2;
+        cv::Mat dstRoi = new_image(cv::Rect(left_x, current_height, r.width, r.height));
+        srcRoi.copyTo(dstRoi);
+        current_height += average_height + r.height;
+    }
+
+
     //return new_image.clone();
     return new_image;
 }
@@ -905,8 +957,11 @@ std::vector<words_struct> find_ordered_glyphs(
         }
     }
 
+    int g_num_vertices = num_vertices(g);
 
-    std::vector<int> c(num_vertices(g));
+    std::vector<int> c(g_num_vertices);
+
+    printf("joined_rects size = %d, num_vertices = %d\n", joined_rects_size, g_num_vertices);
 
     connected_components(
         g, make_iterator_property_map(c.begin(), get(vertex_index, g), c[0]));

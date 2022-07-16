@@ -56,7 +56,7 @@ std::map<int, std::vector<std::vector<int>>> detect_captions(
     cv::Mat& mat, std::vector<cv::Rect>& joined_rects);
 
 cv::Mat find_reflowed_image(
-    std::vector<cv::Rect>& joined_rects, float factor, float zoom_factor, cv::Mat& mat);
+    std::vector<cv::Rect>& joined_rects, std::vector<cv::Rect>& pictures, float factor, float zoom_factor, cv::Mat& mat);
 
 std::vector<words_struct> find_ordered_glyphs(
     std::vector<cv::Rect>& joined_rects);

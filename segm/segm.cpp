@@ -1,4 +1,5 @@
 #include <Python.h>
+
 #include <numpy/ndarraytypes.h>
 #include <numpy/ufuncobject.h>
 #include <numpy/npy_3kcompat.h>
@@ -703,9 +704,12 @@ static PyObject* get_reflowed_image(PyObject* self, PyObject *args)
     std::vector<int> pic_indexes = std::get<1>(new_rects_with_pictures);
 
     std::vector<cv::Rect> filtered_rects;
+    std::vector<cv::Rect> pictures;
     for (int i=0;i<new_rects.size(); i++) {
         if (std::find(pic_indexes.begin(), pic_indexes.end(), i) == pic_indexes.end()) {
             filtered_rects.push_back(new_rects[i]);
+        } else {
+            pictures.push_back(new_rects[i]);
         }
     }
 
@@ -717,7 +721,7 @@ static PyObject* get_reflowed_image(PyObject* self, PyObject *args)
                             1, 3, NPY_ARRAY_CARRAY, NULL);
 
     cv::Mat mat = cv::Mat(cv::Size(dims[1], dims[0]), CV_8UC1, PyArray_DATA(contig));
-    cv::Mat new_image = find_reflowed_image(filtered_rects, factor, zoom_factor, mat);
+    cv::Mat new_image = find_reflowed_image(filtered_rects, pictures, factor, zoom_factor, mat);
 
     cv::Size s = new_image.size();
       const unsigned int nElem = s.height * s.width;
