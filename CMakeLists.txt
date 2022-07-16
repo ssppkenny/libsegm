@@ -54,8 +54,10 @@ find_package(PythonExtensions REQUIRED)
 add_library(_segm MODULE ${SRCS})
 python_extension_module(_segm)
 
-find_package(Python3 3.9 REQUIRED COMPONENTS NumPy)
-message(STATUS ${Python3_NumPy_INCLUDE_DIRS})
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    find_package(Python3 3.9 REQUIRED COMPONENTS NumPy)
+    message(STATUS ${Python3_NumPy_INCLUDE_DIRS})
+endif()
 
 exec_program(${PYTHON_EXECUTABLE}
              ARGS "-c \"import numpy; print(numpy.get_include())\""

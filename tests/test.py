@@ -9,7 +9,7 @@ def test_reflow_image():
     zoom_factor = 2
     factor = 1.5
     new_img = reflow_image(factor, zoom_factor, img)
-    assert new_img.shape == (10597, 5960)
+    assert new_img.shape == (10638, 5960)
 
 def test_find_ordered_glyphs():
     img = cv2.imread('vd_p214.png', cv2.IMREAD_GRAYSCALE)
