@@ -89,8 +89,6 @@ std::tuple<std::vector<words_struct>,double> search_lines(std::vector<cv::Rect>&
 
     assert(joined_rects_size == g_num_vertices);
 
-    printf("joined_rects size = %d, num_vertices = %d\n", size, g_num_vertices);
-
     connected_components(
         g, make_iterator_property_map(c.begin(), get(vertex_index, g), c[0]));
 
@@ -960,8 +958,6 @@ std::vector<words_struct> find_ordered_glyphs(
     int g_num_vertices = num_vertices(g);
 
     std::vector<int> c(g_num_vertices);
-
-    printf("joined_rects size = %d, num_vertices = %d\n", joined_rects_size, g_num_vertices);
 
     connected_components(
         g, make_iterator_property_map(c.begin(), get(vertex_index, g), c[0]));
