@@ -596,63 +596,13 @@ static std::tuple<std::vector<cv::Rect>, std::vector<int>> join_rects(PyObject* 
                             dtype,
                             1, 3, NPY_ARRAY_CARRAY, NULL);
 
-    std::vector<cv::Rect> rects;
-    std::vector<cv::Rect> joined_rects;
-    std::set<std::array<int,4>> enclosing_rects;
     cv::Mat mat;
+    std::vector<cv::Rect> new_rects;
     if (nd >= 2)
     {
         cv::Mat m = cv::Mat(cv::Size(dims[1], dims[0]), CV_8UC1, PyArray_DATA(contig));
         mat= m.clone();
-        threshold(mat, mat, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
-
-        Mat labeled(mat.size(), mat.type());
-        Mat rectComponents = Mat::zeros(Size(0, 0), 0);
-        Mat centComponents = Mat::zeros(Size(0, 0), 0);
-        connectedComponentsWithStats(mat, labeled, rectComponents, centComponents);
-        int count = rectComponents.rows - 1;
-
-        std::vector<int> areas;
-        double sum_of_areas = 0.0;
-
-        for (int i = 1; i < rectComponents.rows; i++)
-        {
-            int x = rectComponents.at<int>(Point(0, i));
-            int y = rectComponents.at<int>(Point(1, i));
-            int w = rectComponents.at<int>(Point(2, i));
-            int h = rectComponents.at<int>(Point(3, i));
-            int area = rectComponents.at<int>(Point(4, i));
-
-            Rect rectangle(x, y, w, h);
-            if (w > 25 * h || h > 25 * w) {
-                continue;
-            }
-            rects.push_back(rectangle);
-            areas.push_back(area);
-            sum_of_areas += area;
-        }
-
-        double avg_area = sum_of_areas / count;
-
-        std::vector<cv::Rect> filtered_rects;
-        for (int i = 0; i<rects.size(); i++)
-        {
-            cv::Rect r = rects[i];
-            int area = areas[i];
-            if (area < avg_area / 10)
-            {
-                continue;
-            }
-            else
-            {
-                filtered_rects.push_back(r);
-            }
-        }
-
-        joined_rects = join_rects(filtered_rects);
-        Enclosure enc(joined_rects);
-        enclosing_rects = enc.solve();
-
+        new_rects = find_enclosing_rects(mat);
         Py_DECREF(contig);
     }
 
@@ -660,24 +610,10 @@ static std::tuple<std::vector<cv::Rect>, std::vector<int>> join_rects(PyObject* 
     Py_INCREF(input);
     Py_INCREF(dtype);
 
-    std::vector<cv::Rect> new_rects;
-    for (auto it = enclosing_rects.begin(); it != enclosing_rects.end(); ++it)
-    {
-        std::array<int, 4> a = *it;
-        int x = -std::get<0>(a);
-        int y = -std::get<1>(a);
-        int width = std::get<2>(a) - x;
-        int height = std::get<3>(a) - y;
-        new_rects.push_back(cv::Rect(x,y,width,height));
-
-    }
-
-
-    if (!do_captions)
+    if (!do_captions || new_rects.size() < 10)
     {
         return std::make_tuple(new_rects, std::vector<int>());
     }
-
 
     auto belongs = detect_captions(mat, new_rects);
 
@@ -721,19 +657,18 @@ static PyObject* get_reflowed_image(PyObject* self, PyObject *args)
                             1, 3, NPY_ARRAY_CARRAY, NULL);
 
     cv::Mat mat = cv::Mat(cv::Size(dims[1], dims[0]), CV_8UC1, PyArray_DATA(contig));
-    cv::Mat new_image = find_reflowed_image(filtered_rects, pictures, factor, zoom_factor, mat);
+    cv::Mat new_image = filtered_rects.size() < 10 ? mat : find_reflowed_image(filtered_rects, pictures, factor, zoom_factor, mat);
 
     cv::Size s = new_image.size();
-      const unsigned int nElem = s.height * s.width;
-      uchar* m = new uchar[nElem];
-      std::memcpy(m, new_image.data, nElem * sizeof(uchar));
+    const unsigned int nElem = s.height * s.width;
+    uchar* m = new uchar[nElem];
+    std::memcpy(m, new_image.data, nElem * sizeof(uchar));
 
-      npy_intp mdim[] = { s.height, s.width };
-      PyObject* img = PyArray_SimpleNewFromData(2, mdim, NPY_UINT8, (void*) m);
+    npy_intp mdim[] = { s.height, s.width };
+    PyObject* img = PyArray_SimpleNewFromData(2, mdim, NPY_UINT8, (void*) m);
 
-      PyObject* ret_val = Py_BuildValue("O", img, s.height, s.width);
-
-      delete[] m;
+    PyObject* ret_val = Py_BuildValue("O", img, s.height, s.width);
+    PyArray_ENABLEFLAGS((PyArrayObject*)ret_val, NPY_ARRAY_OWNDATA);
     
     return ret_val;
 

@@ -2,7 +2,9 @@
 
 #include "IntervalJoin.h"
 #include "RectJoin.h"
+#include "Enclosure.h"
 #include <tuple>
+
 
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, int>
     NeighborsGraph;
@@ -19,6 +21,79 @@ struct less_than_neighbor {
                get<0>(r2).x / (double)std::get<2>(r2);
     }
 };
+
+struct less_than_picture {
+    inline bool operator()(const cv::Rect& r1, const cv::Rect& r2) {
+        return r1.y < r2.y;
+    }
+};
+
+std::vector<cv::Rect> find_enclosing_rects(cv::Mat& mat) {
+        threshold(mat, mat, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+
+        std::vector<cv::Rect> rects;
+        std::vector<cv::Rect> joined_rects;
+
+        cv::Mat labeled(mat.size(), mat.type());
+        cv::Mat rectComponents = cv::Mat::zeros(Size(0, 0), 0);
+        cv::Mat centComponents = cv::Mat::zeros(Size(0, 0), 0);
+        connectedComponentsWithStats(mat, labeled, rectComponents, centComponents);
+        int count = rectComponents.rows - 1;
+
+        std::vector<int> areas;
+        double sum_of_areas = 0.0;
+
+        for (int i = 1; i < rectComponents.rows; i++)
+        {
+            int x = rectComponents.at<int>(Point(0, i));
+            int y = rectComponents.at<int>(Point(1, i));
+            int w = rectComponents.at<int>(Point(2, i));
+            int h = rectComponents.at<int>(Point(3, i));
+            int area = rectComponents.at<int>(Point(4, i));
+
+            Rect rectangle(x, y, w, h);
+            if (w > 25 * h || h > 25 * w) {
+                continue;
+            }
+            rects.push_back(rectangle);
+            areas.push_back(area);
+            sum_of_areas += area;
+        }
+
+        double avg_area = sum_of_areas / count;
+
+        std::vector<cv::Rect> filtered_rects;
+        for (int i = 0; i<rects.size(); i++)
+        {
+            cv::Rect r = rects[i];
+            int area = areas[i];
+            if (area < avg_area / 10)
+            {
+                continue;
+            }
+            else
+            {
+                filtered_rects.push_back(r);
+            }
+        }
+
+        joined_rects = join_rects(filtered_rects);
+        Enclosure enc(joined_rects);
+        std::set<std::array<int,4>> enclosing_rects = enc.solve();
+
+        std::vector<cv::Rect> new_rects;
+        for (auto it = enclosing_rects.begin(); it != enclosing_rects.end(); ++it)
+        {
+            std::array<int, 4> a = *it;
+            int x = -std::get<0>(a);
+            int y = -std::get<1>(a);
+            int width = std::get<2>(a) - x;
+            int height = std::get<3>(a) - y;
+            new_rects.push_back(cv::Rect(x,y,width,height));
+
+        }
+        return new_rects;
+}
 
 std::tuple<std::vector<words_struct>,double> search_lines(std::vector<cv::Rect>& joined_rects, float factor, float zoom_factor, cv::Mat& mat) {
 
@@ -610,6 +685,7 @@ std::vector<std::tuple<Word, double>> transform_paragraph(std::vector<std::vecto
 }
 
 
+
 std::vector<std::vector<std::tuple<Word, double>>> split_paragraph(std::vector<std::tuple<Word, double>>& words, int width) {
     int act_width = 0;
     std::vector<std::vector<std::tuple<Word, double>>> new_lines;
@@ -627,8 +703,76 @@ std::vector<std::vector<std::tuple<Word, double>>> split_paragraph(std::vector<s
             }
             new_lines.push_back(copy_line_words);
             line_words = std::vector<std::tuple<Word, double>>();
-            line_words.push_back(std::make_tuple(w, g));
-            act_width = w.bounding_rect.width + g;
+            if (w.bounding_rect.width < width) {
+                line_words.push_back(std::make_tuple(w, g));
+                act_width = w.bounding_rect.width + g;
+            } else {
+                std::set<int> splits;
+                int shift = INT_MAX;
+                int split_counter = 1;
+                int current_left = 0;
+               std::vector<std::tuple<Word,double>> split_words;
+               std::vector<cv::Rect> current_rects;
+
+               for (int v=0;v<w.glyphs.size(); v++) {
+                   if (w.glyphs[v].x + w.glyphs[v].width -current_left > width || v == w.glyphs.size()-1) {
+                        if (w.glyphs[v].shift < shift) {
+                            shift = w.glyphs[v].shift;
+                        }
+                        if (v == w.glyphs.size() - 1) {
+                            glyph_result gr = w.glyphs[v];
+                            cv::Rect cr(gr.x, gr.y, gr.width, gr.height);
+                            current_rects.push_back(cr);
+                        }
+
+                        std::set<int> inds;
+                        for (int n=0;n<current_rects.size(); n++) {
+                            inds.insert(n);
+                        }
+
+                        cv::Rect wbr = bounding_rect(inds, current_rects);
+                        std::vector<glyph_result> new_glyphs;
+                        for (cv::Rect rr : current_rects) {
+                            glyph_result gres = {rr.x, rr.y, rr.width, rr.height, shift};
+                            new_glyphs.push_back(gres);
+                        }
+                        glyph_result wgr = {wbr.x, wbr.y, wbr.width, wbr.height, shift};
+                        Word ww = {new_glyphs, wgr};
+                        split_words.push_back(std::make_tuple(ww, 0));
+                        shift = INT_MAX;
+                        
+                        if (v < w.glyphs.size()-1) {
+                            current_rects = std::vector<cv::Rect>();
+                            current_left = w.glyphs[v].x;
+                            glyph_result gr = w.glyphs[v];
+                            cv::Rect cr(gr.x, gr.y, gr.width, gr.height);
+                            current_rects.push_back(cr);
+                        }
+                         
+
+                   } else {
+                        glyph_result gr = w.glyphs[v];
+                        cv::Rect cr(gr.x, gr.y, gr.width, gr.height);
+                        current_rects.push_back(cr);
+                   }
+               }
+
+               
+               for (int v=0;v<split_words.size()-1;v++) {
+                    std::tuple<Word,double> sw = split_words[v];
+                    line_words = std::vector<std::tuple<Word, double>>();
+                    line_words.push_back(sw);
+                    new_lines.push_back(line_words);
+                    
+               }
+                line_words = std::vector<std::tuple<Word, double>>();
+                
+                auto last_split_word = split_words[split_words.size()-1];
+                line_words.push_back(last_split_word);
+                act_width = std::get<0>(last_split_word).bounding_rect.width + g;
+               
+               
+            }
         } else {
             line_words.push_back(std::make_tuple(w, g));
             act_width += g;
@@ -649,7 +793,9 @@ cv::Mat find_reflowed_image(
     std::vector<cv::Rect>& joined_rects,std::vector<cv::Rect>& pictures, float factor, float zoom_factor, cv::Mat& mat) {
    
 
-
+    std::sort(pictures.begin(), pictures.end(),
+          less_than_picture());
+    int current_picture = pictures.size() == 0 ? -1 : 0;
 
     std::vector<words_struct> lines_of_words;
     double average_height = 0.0;
@@ -675,8 +821,8 @@ cv::Mat find_reflowed_image(
         cv::Rect scaled_pic((int)(pic.x * zoom_factor), (int)(pic.y * zoom_factor), (int)(pic.width * zoom_factor), (int)(pic.height * zoom_factor));
         if (scaled_pic.width >= new_width) {
             double scale_factor = scaled_pic.width / (double)new_width;
-            int nx = (int)(scaled_pic.x/scale_factor);
-            int ny = (int)(scaled_pic.y/scale_factor);
+            int nx = scaled_pic.x; //(int)(scaled_pic.x/scale_factor);
+            int ny = scaled_pic.y;//(int)(scaled_pic.y/scale_factor);
             int nw = (int)(scaled_pic.width/scale_factor);
             int nh = (int)(scaled_pic.height/scale_factor);
             cv::Rect sp(nx, ny, nw, nh); 
@@ -849,11 +995,34 @@ cv::Mat find_reflowed_image(
     int mat_width  = (int)(new_width + 2*margin);
     cv::Mat new_image(Size(mat_width, mat_height),CV_8UC1, cv::Scalar(255));
     int current_height = margin;
+    cv::Size new_size = new_image.size();
 
     for (int i=0; i<stps.size(); i++) {
         int h_ = line_heights[i];
         int left = margin;
         std::vector<std::tuple<Word, double>> p = stps[i];
+        if (current_picture >= 0 && current_picture <= pictures.size()-1) {
+            cv::Rect pic = pictures[current_picture];
+            Word w_ = get<0>(p[0]);
+            int pos_ = w_.bounding_rect.y + w_.bounding_rect.height;
+            if (pos_ > pic.y) {
+                std::tuple<int,int,int,int> key = std::make_tuple(pic.x,pic.y,pic.width, pic.height);
+                cv::Rect r = picture_transform[key];
+                cv::Mat srcRoi = mat(cv::Rect(pic.x, pic.y, pic.width, pic.height)).clone();
+                cv::Mat resized;
+                if (r.width > new_width) {
+                    cv::resize(srcRoi, resized, cv::Size(r.width, r.height), cv::INTER_LINEAR);
+                } else {
+                    resized = img(cv::Rect(r.x, r.y, r.width, r.height));
+                }
+
+                int left_x = (int)(mat_width - r.width)/2;
+                cv::Mat dstRoi = new_image(cv::Rect(left_x, current_height, r.width, r.height));
+                resized.copyTo(dstRoi);
+                current_height += average_height + r.height;
+                current_picture++;
+            }
+        }
         for (auto e : p) {
             Word w_ = get<0>(e);
             double g_ = get<1>(e);
@@ -864,9 +1033,18 @@ cv::Mat find_reflowed_image(
                     bs = gr.shift;
                 }
             }
-            cv::Mat srcRoi = img(cv::Rect(w_.bounding_rect.x, w_.bounding_rect.y, w_.bounding_rect.width, w_.bounding_rect.height));
-            cv::Mat dstRoi = new_image(cv::Rect(left, current_height + (int)(0.2 * h_) - w_.bounding_rect.height - bs, w_.bounding_rect.width, w_.bounding_rect.height));
-            srcRoi.copyTo(dstRoi);
+            int ypos = current_height + (int)(0.2 * h_) - w_.bounding_rect.height - bs;
+
+            if (left + w_.bounding_rect.width > s.width) {
+                for (int j=0; j<w_.glyphs.size(); j++) {
+                    glyph_result gr = w_.glyphs[j];
+                }
+            }
+            if (left + w_.bounding_rect.width <= new_size.width) {
+                cv::Mat srcRoi = img(cv::Rect(w_.bounding_rect.x, w_.bounding_rect.y, w_.bounding_rect.width, w_.bounding_rect.height));
+                cv::Mat dstRoi = new_image(cv::Rect(left, ypos, w_.bounding_rect.width, w_.bounding_rect.height));
+                srcRoi.copyTo(dstRoi);
+            }
             left += (int)g_ + w_.bounding_rect.width;
 
         }
@@ -876,15 +1054,15 @@ cv::Mat find_reflowed_image(
 
     current_height += average_height;
 
-    for (auto const& t : picture_transform) {
-        std::tuple<int,int, int, int> k = t.first;
-        cv::Rect r = t.second;
-        cv::Mat srcRoi = img(cv::Rect(r.x, r.y, r.width, r.height));
-        int left_x = (int)(mat_width - r.width)/2;
-        cv::Mat dstRoi = new_image(cv::Rect(left_x, current_height, r.width, r.height));
-        srcRoi.copyTo(dstRoi);
-        current_height += average_height + r.height;
-    }
+    /* for (auto const& t : picture_transform) { */
+    /*     std::tuple<int,int, int, int> k = t.first; */
+    /*     cv::Rect r = t.second; */
+    /*     cv::Mat srcRoi = img(cv::Rect(r.x, r.y, r.width, r.height)); */
+    /*     int left_x = (int)(mat_width - r.width)/2; */
+    /*     cv::Mat dstRoi = new_image(cv::Rect(left_x, current_height, r.width, r.height)); */
+    /*     srcRoi.copyTo(dstRoi); */
+    /*     current_height += average_height + r.height; */
+    /* } */
 
 
     //return new_image.clone();
@@ -1316,7 +1494,7 @@ std::vector<int> join_with_captions(std::map<int, std::vector<std::vector<int>>>
     std::vector<int> pic_indexes;
 
     for (int i = 0; i<new_rects.size(); i++) {
-        if (new_rects[i].height > 7 * average_height) {
+        if (new_rects[i].height > 7 * average_height && new_rects[i].width > 3 * average_height) {
             pic_indexes.push_back(i);
         }
     }

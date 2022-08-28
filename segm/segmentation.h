@@ -55,6 +55,9 @@ std::vector<std::tuple<Word, double>> transform_paragraph(std::vector<std::vecto
 std::map<int, std::vector<std::vector<int>>> detect_captions(
     cv::Mat& mat, std::vector<cv::Rect>& joined_rects);
 
+
+std::vector<cv::Rect> find_enclosing_rects(cv::Mat& mat);
+
 cv::Mat find_reflowed_image(
     std::vector<cv::Rect>& joined_rects, std::vector<cv::Rect>& pictures, float factor, float zoom_factor, cv::Mat& mat);
 
